@@ -1,61 +1,63 @@
-# clearCloud Architecture Blueprint (Layer 1.1)
+# clearCloud Architecture Blueprint (Unified Social Application)
 
-## 1. Role in the Vera Ecosystem
+## 1. Overview in the Vera Ecosystem
 
-`clearCloud` is the **Layer 1.1 Decentralized Identity, Validation Market & EnDAOsment Protocol** of the Vera truth settlement ecosystem.
+`clearCloud` is the **Unified Social Application** of the Vera decentralized truth network. It consolidates:
+- **Feature 1.1**: The Epistemic Feed, 3-Tier Relational Circles, Groundedness Index ($G$) ranking, and Asymmetric Hidden Reputation dynamics.
+- **Feature 1.3**: The Courtroom Deliberation Forum, Falsifiability Gatekeeper, Compound Claim DAG decomposition, Juror deliberation, and Challenge Bond retrials.
 
 ```mermaid
 graph TD
-    subgraph Layer0 ["Layer 0: Core Epistemic Engine (mrtingalingling/vera)"]
-        V_Engine["Core Heuristics & Local AI<br/>(localAiService.js)"]
-        V_Nano["On-Device AI Engine<br/>(Chrome Gemini Nano Streaming)"]
-        V_P2P["Gossip Swarm Attestation<br/>(p2pNode.js)"]
-        V_DOM["DOM Parser & WOT Highlighter<br/>(scannerService.js)"]
-        V_DB["Offline Storage Engine<br/>(VeraDB IndexedDB)"]
+    subgraph Layer0 ["Layer 0 & Ingestion Engine (mrtingalingling/vera)"]
+        V_Engine["Core Heuristics & Local AI"]
+        V_Nano["On-Device Chrome Gemini Nano"]
+        V_Scrub["Private Messaging PII Scrubber (Feature 1.2)"]
     end
 
-    subgraph Layer1_1 ["Layer 1.1: Identity & Settlement Protocol (mrtingalingling/clearCloud)"]
-        C_Auth["Identity Broker Interface<br/>(authProvider.js)"]
-        C_ATProto["ATProto Agent & DID:PLC<br/>(atprotoProvider.js)"]
-        C_Web3["NFT & Web3 SIWE Interface<br/>(web3NftProvider.js)"]
-        C_Market["Validation Market Registry<br/>(validationMarket.js)"]
-        C_DAO["DAO Governance Placeholder<br/>(daoRegistry.js)"]
+    subgraph LayerProtocol ["Protocol & Settlement Backend (mrtingalingling/veracities.social)"]
+        P_Auth["Identity Broker Interface (ATProto & Web3)"]
+        P_Market["Validation Market Staking & Payout Pools"]
+        P_DAO["Epistemic DAO Governance ('EnDAOsment')"]
+        P_Settle["Courtroom Settlement Protocol (14-day cold & challenge bonds)"]
     end
 
-    subgraph Layer1_2_3 ["Layer 1.2 & 1.3: Social Truth & Courtroom (mrtingalingling/veracities.social)"]
-        S_Overlay["Social Overlays<br/>(X, Bluesky, Reddit, YouTube)"]
-        S_Court["Courtroom Dispute UI<br/>(Claim Jury & Staking)"]
-        S_Feed["Decentralized Veracity Feed<br/>(Consensus Feed)"]
+    subgraph LayerApp ["Unified Social Application (mrtingalingling/clearCloud)"]
+        A_Feed["The Feed & Relational Circles (Feature 1.1)"]
+        A_Grounded["Groundedness Index (G) & Hidden Rep"]
+        A_Court["The Courtroom Deliberation Forum (Feature 1.3)"]
+        A_DAG["Compound Claim DAG Decomposition"]
+        A_Jury["Juror Voting & AI Judge Synthesis"]
+        A_Overlay["In-Feed Social Overlays (Bluesky, X, Reddit)"]
     end
 
-    %% Cross-Repo Interconnections
-    Layer0 -->|"Exports @vera/core API (claim evaluation, metrics, P2P)"| Layer1_2_3
-    Layer0 -->|"Supplies verified attestations"| Layer1_1
-    Layer1_1 -->|"Provides ATProto / Web3 DID authentication"| Layer1_2_3
-    Layer1_1 -->|"Settles disputes & stakes on-chain / via DAO"| Layer1_2_3
+    Layer0 -->|"Exports @vera/core API (local AI, PII scrubber)"| LayerApp
+    LayerProtocol -->|"Provides ATProto Auth & Staking Settlement Protocol"| LayerApp
 ```
 
 ---
 
-## 2. Subsystems
+## 2. Core Application Modules
 
-### 2.1 Identity Subsystem (`src/identity/`)
-- **ATProto Authentication Provider (`atprotoProvider.js`)**:
-  - Connects to Bluesky / AT Protocol Personal Data Servers (`https://bsky.social` or custom PDS).
-  - Resolves handles (`alice.bsky.social`) to decentralized identifiers (`did:plc:...`).
-  - Issues and verifies session JWT tokens.
-- **Web3 & NFT Identity Provider (`web3NftProvider.js`)**:
-  - Implements EIP-4361 Sign-In With Ethereum (SIWE).
-  - Resolves EVM addresses to W3C `did:pkh:eip155:<chainId>:<address>`.
-  - Provides extensible token-gating interface for ERC-721/1155 NFT ownership credentials.
+### 2.1 The Feed Subsystem (`src/feed/`)
+- **Relational Circles (`feedManager.js`)**:
+  - Tier 1 (Close Friends): Intimate circle with personal rage-bait filtering.
+  - Tier 2 (Friends/Acquaintances): Balanced heuristic feed.
+  - Tier 3 (Network-Wide): Algorithmic ranking driven 60% by Groundedness Index and 40% by Author Hidden Reputation.
+- **Groundedness Index Formula**:
+  $$G = \frac{\text{Facts}}{\text{Facts} + \text{Speculation} + (3 \times \text{Falsehood})}$$
+- **Asymmetric Hidden Reputation Engine**:
+  - Slow accrual: $+1.5$ per verified claim, $+2.0$ for jury consensus.
+  - Swift deduction: $-18.0$ for debunked claims, $-12.0$ for rage-bait, $-25.0$ for courtroom slashing.
 
-### 2.2 Validation Market Subsystem (`src/market/validationMarket.js`)
-- Supports stake-weighted claim wagering across Vera's 4 epistemic outcomes:
-  `VERIFIED`, `MISINFORMED`, `DISPUTED`, `NEED_CONTEXT`.
-- Tracks prediction pools, computes implied probabilities & odds multipliers.
-- Automated resolution upon oracle/jury verdict settlement with payout distribution.
+### 2.2 The Courtroom Subsystem (`src/courtroom/`)
+- **Falsifiability Gatekeeper (`falsifiabilityGatekeeper.js`)**: Screens claims before docket admission, blocking unprovable subjective/aesthetic statements.
+- **Case Manager (`caseManager.js`)**:
+  - Compound Claim DAG hierarchical decomposition (`decomposeClaim`).
+  - 14-day stale cold case refund execution (**94% refunded**, **6% maintenance fee** retained).
+  - Challenge Bond retrial appeals (overturned verdicts award bond + 50% bounty; reaffirmed forfeit bond).
+- **Jury & AI Judge Engine (`juryEngine.js`)**:
+  - Stake-weighted anonymous juror voting on evidence citations.
+  - AI Judge judicial summary synthesizing consensus.
 
-### 2.3 Epistemic DAO Governance Subsystem ("EnDAOsment") (`src/governance/daoRegistry.js`)
-- Protocol proposal lifecycle (`ACTIVE` -> `PASSED`/`FAILED` -> `EXECUTED`).
-- Weighted voting based on epistemic reputation and staked tokens.
-- Quorum & consensus threshold enforcement (e.g. 66% supermajority).
+### 2.3 Social Overlays (`src/social/`)
+- **Overlay Cards (`overlayService.js`)**: Renders epistemic badges and cards across Bluesky, X, Reddit, and YouTube with direct links to Courtroom case dockets.

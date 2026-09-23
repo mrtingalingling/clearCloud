@@ -1,87 +1,66 @@
-# ☁️ clearCloud · Layer 1.1 Decentralized Identity & Validation Market
+# ☁️ clearCloud · Unified Epistemic Social Application
 
-> Decentralized Identity (ATProto & Web3 NFT), Validation Market registry, and Epistemic DAO governance ("EnDAOsment") for the Vera truth settlement ecosystem.
+> Feature 1.1 (The Feed & Relational Circles) + Feature 1.3 (The Courtroom Deliberation Forum) for the Vera ecosystem.
 
 ---
 
 ## 🏗️ Architecture Blueprint
 
-clearCloud sits at **Layer 1.1** of the Vera multi-repository architecture, connecting Layer 0 (`mrtingalingling/vera`) on-device claim evaluation with Layer 1.2/1.3 (`mrtingalingling/veracities.social`) social courtroom deliberation:
+`clearCloud` is the flagship user-facing social application, consuming protocol settlement services from [`mrtingalingling/veracities.social`](https://github.com/mrtingalingling/veracities.social) and local on-device AI from [`mrtingalingling/vera`](https://github.com/mrtingalingling/vera):
 
 ```mermaid
 graph TD
-    subgraph Layer0 ["Layer 0: Core Epistemic Engine (mrtingalingling/vera)"]
+    subgraph Layer0 ["Layer 0 & Ingestion Engine (mrtingalingling/vera)"]
         V_Engine["Core Heuristics & Local AI"]
         V_Nano["On-Device Chrome Gemini Nano"]
-        V_P2P["Gossip Swarm Attestation"]
+        V_Scrub["Private Messaging PII Scrubber (Feature 1.2)"]
     end
 
-    subgraph Layer1_1 ["Layer 1.1: Identity & Settlement (mrtingalingling/clearCloud)"]
-        C_Auth["Identity Broker Interface"]
-        C_ATProto["ATProto Agent & DID:PLC"]
-        C_Web3["NFT & Web3 SIWE Interface"]
-        C_Market["Validation Market Registry"]
-        C_DAO["DAO Governance Placeholder"]
+    subgraph LayerProtocol ["Protocol & Settlement Backend (mrtingalingling/veracities.social)"]
+        P_Auth["Identity Broker Interface (ATProto & Web3)"]
+        P_Market["Validation Market Staking & Payout Pools"]
+        P_DAO["Epistemic DAO Governance ('EnDAOsment')"]
+        P_Settle["Courtroom Settlement Protocol (14-day cold & challenge bonds)"]
     end
 
-    subgraph Layer1_2_3 ["Layer 1.2 & 1.3: Social Truth & Courtroom (mrtingalingling/veracities.social)"]
-        S_Overlay["Social Overlays (X, Bluesky, Reddit)"]
-        S_Court["Courtroom Dispute UI"]
-        S_Feed["Decentralized Veracity Feed"]
+    subgraph LayerApp ["Unified Social Application (mrtingalingling/clearCloud)"]
+        A_Feed["The Feed & Relational Circles (Feature 1.1)"]
+        A_Grounded["Groundedness Index (G) & Hidden Rep"]
+        A_Court["The Courtroom Deliberation Forum (Feature 1.3)"]
+        A_DAG["Compound Claim DAG Decomposition"]
+        A_Jury["Juror Voting & AI Judge Synthesis"]
+        A_Overlay["In-Feed Social Overlays (Bluesky, X, Reddit)"]
     end
 
-    Layer0 -->|"Exports @vera/core API"| Layer1_2_3
-    Layer0 -->|"Supplies verified attestations"| Layer1_1
-    Layer1_1 -->|"Provides ATProto / Web3 DID authentication"| Layer1_2_3
-    Layer1_1 -->|"Settles disputes & stakes on-chain / via DAO"| Layer1_2_3
+    Layer0 -->|"Exports @vera/core API (local AI, PII scrubber)"| LayerApp
+    LayerProtocol -->|"Provides ATProto Auth & Staking Settlement Protocol"| LayerApp
 ```
 
 Detailed specification available in [**`docs/architecture.md`**](./docs/architecture.md).
 
 ---
 
-## 🔑 Key Features
+## 🌟 Application Features
 
-### 1. ATProto & Web3 Identity Broker (`src/identity/`)
-- **ATProto First**: Connects with Bluesky / AT Protocol Personal Data Servers (`@atproto/api`), authenticates handles (`alice.bsky.social`), resolves `did:plc` directories, and generates authenticated JWT sessions.
-- **Future Web3 / NFT Option**: Extensible EIP-4361 Sign-In With Ethereum (SIWE) and ERC-721 token gating to link on-chain wallets (`did:pkh:eip155:...`).
-
-### 2. Validation Market Registry (`src/market/validationMarket.js`)
-- Prediction and staking pools for disputed claims.
-- Evaluates payouts based on Vera's 4 epistemic outcomes: `VERIFIED`, `MISINFORMED`, `DISPUTED`, and `NEED_CONTEXT`.
-- Dynamic odds calculation and automated oracle consensus settlement.
-
-### 3. Epistemic DAO Governance ("EnDAOsment") (`src/governance/daoRegistry.js`)
-- Proposal lifecycle management for protocol rules, oracle whitelisting, and slashing appeals.
-- Weighted voting with configurable consensus thresholds.
+1. **Feature 1.1: The Epistemic Feed & Relational Circles (`src/feed/`)**:
+   - 3-Tier Circles: Tier 1 (Close Friends), Tier 2 (Friends/Acquaintances), Tier 3 (Network-Wide).
+   - Groundedness Index formula: $G = \frac{\text{Facts}}{\text{Facts} + \text{Speculation} + 3 \times \text{Falsehood}}$.
+   - Asymmetric Hidden Reputation engine ("Trust is hard to build, fast to lose").
+   - Tier 1 Personal Rage-Bait Scrubber.
+2. **Feature 1.3: The Courtroom Deliberation Forum (`src/courtroom/`)**:
+   - Falsifiability Gatekeeper strictly screening empirical claims from subjective/metaphysical statements.
+   - Case Manager with Compound Claim DAG hierarchical decomposition.
+   - 14-day cold case refund mechanism (**94% refunded**, **6% protocol fee**).
+   - Challenge Bond retrial appeals (overturned verdicts award bond + 50% bounty).
+   - Anonymous stake-weighted juror deliberation and AI judicial synthesis.
+3. **In-Feed Social Overlays (`src/social/`)**:
+   - Live badge and card generator for Bluesky, X/Twitter, Reddit, and YouTube.
 
 ---
 
 ## 🚀 Quickstart & Testing
 
 ```bash
-# Install dependencies
 npm install
-
-# Run Vitest test suite (19 unit & integration tests)
 npm test
-```
-
----
-
-## 📦 Consuming as a Dependency
-
-In downstream applications (e.g. `veracities.social`):
-
-```javascript
-import { createAuthProvider, ValidationMarket, DaoRegistry } from 'clearcloud';
-
-// 1. Authenticate with ATProto
-const auth = createAuthProvider('atproto');
-const session = await auth.authenticate({ identifier: 'user.bsky.social', password: 'app-password' });
-console.log('Logged in DID:', session.did);
-
-// 2. Query Validation Market
-const market = new ValidationMarket();
-const odds = market.calculateMarketOdds('mkt_1');
 ```

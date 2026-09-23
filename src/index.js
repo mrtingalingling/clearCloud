@@ -1,8 +1,10 @@
 /**
- * clearCloud - Layer 1.1 Decentralized Identity, Validation Market & EnDAOsment
- * Core library entrypoint.
+ * clearCloud
+ * Feature 1.1 + Feature 1.3: Unified Social Application
+ * Combines The Feed & Relational Circles, Groundedness Index, Hidden Reputation,
+ * and The Courtroom Deliberation Forum & Case Docket.
  */
 
-export * from './identity/index.js';
-export * from './market/validationMarket.js';
-export * from './governance/daoRegistry.js';
+export * from './feed/index.js';
+export * from './courtroom/index.js';
+export * from './social/index.js';
