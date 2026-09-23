@@ -1,6 +1,7 @@
 <script>
   import { caseManager, CASE_STATUS } from '../courtroom/caseManager.js';
   import { falsifiabilityGatekeeper } from '../courtroom/falsifiabilityGatekeeper.js';
+  import { localNanoGatekeeper } from '../courtroom/localNanoGatekeeper.js';
   import { juryEngine } from '../courtroom/juryEngine.js';
   import { blindTrialEngine } from '../courtroom/blindTrialEngine.js';
   import { sortitionEngine } from '../courtroom/sortitionEngine.js';
@@ -15,6 +16,7 @@
   let docketDeposit = $state(100);
   let docketError = $state('');
   let docketSuccess = $state('');
+  let nanoPreview = $state(null);
 
   // Selected case for deliberation
   let selectedCaseId = $state(null);
@@ -35,6 +37,18 @@
     if (initialClaim) {
       docketClaim = initialClaim;
       docketTitle = initialClaim.length > 40 ? initialClaim.slice(0, 40) + '...' : initialClaim;
+    }
+  });
+
+  // Local Chrome Gemini Nano Semantic Evaluation
+  $effect(() => {
+    const claim = docketClaim.trim();
+    if (claim.length >= 8) {
+      localNanoGatekeeper.evaluateSemanticFalsifiability(claim).then(res => {
+        nanoPreview = res;
+      });
+    } else {
+      nanoPreview = null;
     }
   });
 
@@ -257,6 +271,19 @@
         bind:value={docketClaim}
         rows="2"
       ></textarea>
+
+      {#if nanoPreview}
+        <div class="nano-preview-badge {nanoPreview.isFalsifiable ? 'valid' : 'invalid'}">
+          <span class="material-symbols-outlined icon-nano">{nanoPreview.isFalsifiable ? 'verified_user' : 'block'}</span>
+          <div class="nano-text">
+            <span class="nano-headline">
+              <strong>{nanoPreview.isFalsifiable ? 'Admissible: ' + nanoPreview.category : 'Gatekeeper: ' + nanoPreview.category}</strong>
+              <span class="nano-tag">Local Chrome Nano SLM</span>
+            </span>
+            <p class="nano-desc">{nanoPreview.isFalsifiable ? nanoPreview.falsificationCondition : nanoPreview.reason}</p>
+          </div>
+        </div>
+      {/if}
 
       <div class="docket-actions">
         <span class="gate-helper">Claims containing subjective aesthetic or metaphysical opinions are strictly rejected by the Gatekeeper.</span>
@@ -629,6 +656,65 @@
     margin-top: 10px;
     flex-wrap: wrap;
     gap: 8px;
+  }
+
+  .nano-preview-badge {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-top: 8px;
+    font-size: 0.78rem;
+    transition: all 0.2s ease;
+  }
+
+  .nano-preview-badge.valid {
+    background: rgba(46, 160, 67, 0.12);
+    border: 1px solid #2ea043;
+    color: #3fb950;
+  }
+
+  .nano-preview-badge.invalid {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #f85149;
+  }
+
+  .icon-nano {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .nano-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nano-headline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nano-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(88, 166, 255, 0.2);
+    color: #58a6ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .nano-desc {
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    opacity: 0.9;
   }
 
   .gate-helper {

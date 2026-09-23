@@ -1,6 +1,7 @@
 <script>
   import FeedView from './components/FeedView.svelte';
   import CourtroomView from './components/CourtroomView.svelte';
+  import WalletLinkModal from './components/WalletLinkModal.svelte';
 
   const VIEWS = {
     FEED: 'FEED',
@@ -9,6 +10,8 @@
 
   let activeView = $state(VIEWS.FEED);
   let pendingDocketClaim = $state('');
+  let isWalletModalOpen = $state(false);
+  let linkedWallet = $state(null);
 
   // Mock authenticated ATProto user
   let user = $state({
@@ -44,6 +47,18 @@
           <span class="meter-label">Platform Groundedness</span>
           <span class="meter-val">G = 0.88</span>
         </div>
+
+        {#if linkedWallet}
+          <div class="wallet-badge" title="Cryptographically Linked via EIP-4361">
+            <span class="material-symbols-outlined icon-eth">verified</span>
+            <span class="wallet-addr">{linkedWallet.slice(0, 6)}...{linkedWallet.slice(-4)}</span>
+          </div>
+        {:else}
+          <button class="btn-link-wallet" onclick={() => isWalletModalOpen = true}>
+            <span class="material-symbols-outlined">link</span>
+            <span>Link Web3 Wallet</span>
+          </button>
+        {/if}
 
         <div class="atproto-badge">
           <span class="material-symbols-outlined icon-atproto">cloud</span>
@@ -89,6 +104,16 @@
       />
     {/if}
   </main>
+
+  <WalletLinkModal
+    isOpen={isWalletModalOpen}
+    userDid={user.did}
+    onClose={() => isWalletModalOpen = false}
+    onLinked={(res) => {
+      linkedWallet = res.walletAddress;
+      isWalletModalOpen = false;
+    }}
+  />
 </div>
 
 <style>
@@ -174,6 +199,45 @@
     font-size: 0.82rem;
     font-weight: 700;
     color: #00f5d4;
+  }
+
+  .btn-link-wallet {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(88, 166, 255, 0.1);
+    color: #58a6ff;
+    border: 1px solid rgba(88, 166, 255, 0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-link-wallet:hover {
+    background: rgba(88, 166, 255, 0.2);
+    border-color: #58a6ff;
+  }
+
+  .wallet-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(46, 160, 67, 0.15);
+    border: 1px solid #2ea043;
+    border-radius: 20px;
+    padding: 4px 12px;
+    color: #3fb950;
+    font-family: monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .icon-eth {
+    font-size: 1rem;
+    color: #3fb950;
   }
 
   .atproto-badge {
