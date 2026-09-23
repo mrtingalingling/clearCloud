@@ -4,3 +4,4 @@ export * from './blindTrialEngine.js';
 export * from './sortitionEngine.js';
 export * from './caseManager.js';
 export * from './juryEngine.js';
+export * from './oracleRelayerBridge.js';
