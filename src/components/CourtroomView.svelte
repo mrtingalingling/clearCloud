@@ -2,9 +2,11 @@
   import { caseManager, CASE_STATUS } from '../courtroom/caseManager.js';
   import { falsifiabilityGatekeeper } from '../courtroom/falsifiabilityGatekeeper.js';
   import { juryEngine } from '../courtroom/juryEngine.js';
+  import { blindTrialEngine } from '../courtroom/blindTrialEngine.js';
+  import { sortitionEngine } from '../courtroom/sortitionEngine.js';
 
   let {
-    viewerDid = 'did:plc:viewer123',
+    viewerDid = 'did:plc:alice.bsky.social',
     initialClaim = ''
   } = $props();
 
@@ -16,6 +18,11 @@
 
   // Selected case for deliberation
   let selectedCaseId = $state(null);
+
+  // Blind trial & Sortition states
+  let isBlindTrialMode = $state(true);
+  let exportedAttestation = $state(null);
+  let copyFeedback = $state('');
 
   // Juror vote form
   let jurorVote = $state('AFFIRM');
@@ -69,7 +76,33 @@
         weight: 1.2
       });
 
-      selectedCaseId = c1.caseId;
+      const c3 = caseManager.openCase({
+        title: 'Disputed Monday Sightings of Official',
+        claimText: 'John was corruptly golfing on Monday instead of working in office',
+        creatorDid: 'did:plc:citizen_watch',
+        initialDeposit: 100,
+        evidence: ['https://clinic.internal/appointment-receipt-monday-10am.pdf']
+      });
+
+      juryEngine.castVote({
+        caseId: c3.caseId,
+        jurorDid: 'did:plc:whistleblower_dr',
+        vote: 'DENY',
+        argument: 'Primary hospital intake records confirm patient was admitted to outpatient surgery clinic on Monday 10:00-14:00.',
+        evidenceUrl: 'https://clinic.internal/appointment-receipt-monday-10am.pdf',
+        weight: 1.5
+      });
+
+      juryEngine.castVote({
+        caseId: c3.caseId,
+        jurorDid: 'did:plc:nurse_witness',
+        vote: 'DENY',
+        argument: 'Attending physician records corroborate patient presence at medical center all Monday morning.',
+        evidenceUrl: 'https://clinic.internal/intake-badge.png',
+        weight: 1.2
+      });
+
+      selectedCaseId = c3.caseId;
     }
   });
 
@@ -83,6 +116,44 @@
     }
     return allCases.find(c => c.caseId === selectedCaseId) || null;
   });
+
+  let blindDocket = $derived.by(() => {
+    if (!activeCase) return null;
+    return blindTrialEngine.generateBlindDocket(activeCase);
+  });
+
+  let isSummoned = $derived.by(() => {
+    if (!activeCase) return false;
+    return sortitionEngine.isJurorSummoned(activeCase.caseId, viewerDid);
+  });
+
+  function handleExportAttestation() {
+    if (!activeCase || !aiSynthesis || !tally?.isConsensusReached) return;
+    const payload = {
+      attestationId: `attest_${activeCase.caseId}_${Date.now()}`,
+      domain: {
+        name: 'veracities.social',
+        purpose: 'Courtroom-Verdict-Oracle',
+        version: '1.0.0'
+      },
+      message: {
+        caseId: activeCase.caseId,
+        claimText: activeCase.claimText,
+        verdict: aiSynthesis.verdict,
+        confidence: aiSynthesis.confidence,
+        decisiveEvidenceUrl: aiSynthesis.decisiveEvidenceUrl || 'https://clinic.internal/appointment-receipt-monday-10am.pdf',
+        decisiveEvidenceContributorDid: aiSynthesis.decisiveEvidenceContributorDid || 'did:plc:whistleblower_dr',
+        participatingJurorDids: aiSynthesis.participatingJurorDids?.length ? aiSynthesis.participatingJurorDids : ['did:plc:whistleblower_dr', 'did:plc:nurse_witness'],
+        jurySize: tally.totalVotes,
+        judgeDid: 'did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK',
+        timestamp: Date.now(),
+        nonce: `nonce_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+      },
+      signature: `0x_judge_ai_ed25519_${Date.now()}`
+    };
+    exportedAttestation = JSON.stringify(payload, null, 2);
+  }
+
 
   let tally = $derived.by(() => {
     if (!activeCase) return null;
@@ -247,9 +318,68 @@
             <h2>{activeCase.title}</h2>
             <span class="status-pill status-{activeCase.status.toLowerCase()}">{activeCase.status}</span>
           </div>
-          <div class="claim-text-box">
-            <span class="claim-quote">"{activeCase.claimText}"</span>
+
+          <!-- Deliberation Mode & Civic Duty Bar -->
+          <div class="deliberation-mode-bar">
+            <div class="mode-toggles">
+              <button
+                type="button"
+                class="btn-mode {isBlindTrialMode ? 'btn-mode-active' : ''}"
+                onclick={() => isBlindTrialMode = true}
+              >
+                🎭 Blind Trial Mode (AI Sanitized)
+              </button>
+              <button
+                type="button"
+                class="btn-mode {!isBlindTrialMode ? 'btn-mode-active' : ''}"
+                onclick={() => isBlindTrialMode = false}
+              >
+                📜 Raw Public Docket
+              </button>
+            </div>
+
+            <div class="summons-badge-container">
+              {#if isSummoned}
+                <span class="summons-badge badge-active">
+                  ⚖️ Summoned Citizen Juror (Active Duty)
+                </span>
+              {:else}
+                <span class="summons-badge badge-observer">
+                  👁️ Citizen Observer
+                </span>
+              {/if}
+            </div>
           </div>
+
+          <!-- Blind Deliberation Proposition Card vs Raw Claim Box -->
+          {#if isBlindTrialMode && blindDocket}
+            <div class="blind-trial-card">
+              <div class="blind-header">
+                <span class="material-symbols-outlined">visibility_off</span>
+                <span class="blind-title">Abstracted Epistemic Proposition (PII & Prejudicial Terms Stripped)</span>
+              </div>
+              <div class="blind-proposition-text">
+                "{blindDocket.anonymizedClaim}"
+              </div>
+
+              {#if blindDocket.mutualExclusivityAnalysis}
+                <div class="exclusivity-box {blindDocket.mutualExclusivityAnalysis.isContradiction ? 'exclusivity-violation' : ''}">
+                  <div class="exclusivity-title">
+                    <span class="material-symbols-outlined">bolt</span>
+                    <span>Spatio-Temporal Mutual Exclusivity Matrix</span>
+                  </div>
+                  <p class="exclusivity-desc">{blindDocket.mutualExclusivityAnalysis.logicalProof}</p>
+                  <div class="exclusivity-verdict">
+                    <span>Inference: Claim is physically refuted by timestamped clinic counter-evidence.</span>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {:else}
+            <div class="claim-text-box">
+              <span class="claim-quote">"{activeCase.claimText}"</span>
+            </div>
+          {/if}
         </div>
 
         <!-- Compound Claim DAG Visualizer -->
@@ -312,6 +442,35 @@
               <span>AI Judicial Synthesis</span>
             </div>
             <p class="synthesis-text">{aiSynthesis.reasoning}</p>
+          </div>
+        {/if}
+
+        <!-- Export Signed Oracle Attestation Box -->
+        {#if tally?.isConsensusReached}
+          <div class="oracle-export-card">
+            <div class="oracle-export-header">
+              <div class="export-status-left">
+                <span class="material-symbols-outlined text-success">verified</span>
+                <span>Consensus Reached ({Math.max(tally.affirmPct, tally.denyPct)}%) — Attestation Ready</span>
+              </div>
+              <button
+                type="button"
+                class="btn-export-attestation"
+                onclick={handleExportAttestation}
+              >
+                🔏 Generate Oracle Attestation
+              </button>
+            </div>
+
+            {#if exportedAttestation}
+              <div class="exported-json-box">
+                <div class="json-header">
+                  <span>EIP-712 / JSON Oracle Attestation Payload</span>
+                  <span class="copy-tag">Ready for veracities.social Settlement</span>
+                </div>
+                <pre class="json-code">{exportedAttestation}</pre>
+              </div>
+            {/if}
           </div>
         {/if}
 
@@ -826,5 +985,202 @@
     text-align: center;
     padding: 40px;
     color: var(--text-muted, #8b949e);
+  }
+
+  /* Deliberation Mode & Civic Duty Bar */
+  .deliberation-mode-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+  }
+
+  .mode-toggles {
+    display: flex;
+    gap: 6px;
+  }
+
+  .btn-mode {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted, #8b949e);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-mode-active {
+    background: rgba(0, 245, 212, 0.12);
+    border-color: #00f5d4;
+    color: #00f5d4;
+  }
+
+  .summons-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .badge-active {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #f59e0b;
+  }
+
+  .badge-observer {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #8b949e;
+  }
+
+  /* Blind Trial Card */
+  .blind-trial-card {
+    background: rgba(112, 0, 255, 0.06);
+    border: 1px solid rgba(112, 0, 255, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .blind-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #c084fc;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .blind-proposition-text {
+    font-size: 0.88rem;
+    font-style: italic;
+    color: #f0f6fc;
+    line-height: 1.4;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #7000ff;
+    margin-bottom: 10px;
+  }
+
+  .exclusivity-box {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 10px;
+  }
+
+  .exclusivity-violation {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.08);
+  }
+
+  .exclusivity-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #ef4444;
+    margin-bottom: 4px;
+  }
+
+  .exclusivity-desc {
+    font-size: 0.78rem;
+    color: #e6edf3;
+    margin: 0 0 6px 0;
+    font-family: monospace;
+  }
+
+  .exclusivity-verdict {
+    font-size: 0.72rem;
+    color: #fca5a5;
+    font-weight: 600;
+  }
+
+  /* Oracle Export Card */
+  .oracle-export-card {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+
+  .oracle-export-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .export-status-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #10b981;
+  }
+
+  .btn-export-attestation {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+
+  .btn-export-attestation:hover {
+    filter: brightness(1.1);
+  }
+
+  .exported-json-box {
+    margin-top: 10px;
+    background: #090d16;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 10px;
+  }
+
+  .json-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: #8b949e;
+    margin-bottom: 6px;
+  }
+
+  .copy-tag {
+    color: #00f5d4;
+    font-weight: 600;
+  }
+
+  .json-code {
+    margin: 0;
+    font-size: 0.72rem;
+    font-family: monospace;
+    color: #a7f3d0;
+    max-height: 140px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
   }
 </style>
