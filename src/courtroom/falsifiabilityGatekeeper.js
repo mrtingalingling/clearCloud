@@ -6,9 +6,9 @@
 
 const SUBJECTIVE_INDICATORS = [
   /\b(?:better|worse|best|worst|greatest|ugliest|coolest|nicest|favorite)\s+than\b/i,
-  /\b(?:is|are)\s+(?:better|worse|the best|the worst|superior|inferior)\b/i,
+  /\b(?:is|are)\s+(?:[\w-]+\s+)?(?:better|worse|the best|the worst|superior|inferior)\b/i,
   /\b(?:god|allah|yahweh|karma|heaven|hell|reincarnation|soul)\s+(?:exists|is real|is wicked|is righteous)\b/i,
-  /\b(?:is|are)\s+(?:wicked|evil|blessed|cursed|saintly|morally superior)\b/i,
+  /\b(?:is|are)\s+(?:[\w-]+\s+)?(?:wicked|evil|blessed|cursed|saintly|morally superior)\b/i,
   /\b(?:tastes?\s+better|looks?\s+uglier|sounds?\s+sweeter)\b/i,
   /\b(?:jazz is better than rock|rock is better than jazz)\b/i
 ];

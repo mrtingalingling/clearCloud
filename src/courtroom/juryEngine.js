@@ -82,9 +82,10 @@ export class JuryEngine {
     };
   }
 
-  synthesizeJudicialVerdict(caseObj) {
-    const tally = this.tallyJury(caseObj.caseId);
-    const votes = this.caseVotes.get(caseObj.caseId) || [];
+  synthesizeJudicialVerdict(caseObjOrId) {
+    const caseId = typeof caseObjOrId === 'object' && caseObjOrId !== null ? caseObjOrId.caseId : caseObjOrId;
+    const tally = this.tallyJury(caseId);
+    const votes = this.caseVotes.get(caseId) || [];
 
     let recommendedVerdict = 'NEED_CONTEXT';
     let reasoning = 'Insufficient decisive juror consensus to conclude proof.';
@@ -103,8 +104,10 @@ export class JuryEngine {
     }
 
     return {
-      caseId: caseObj.caseId,
+      caseId,
       recommendedVerdict,
+      verdict: recommendedVerdict,
+      confidence: tally.isConsensusReached ? Math.round(Math.max(tally.affirmPct, tally.denyPct)) / 100 : 0.5,
       reasoning,
       tally,
       evidenceCitations: votes.filter(v => v.evidenceUrl).map(v => v.evidenceUrl),
