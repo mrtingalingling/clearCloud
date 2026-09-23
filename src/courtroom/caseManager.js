@@ -47,6 +47,14 @@ export class CaseManager {
   }
 
   openCase(params) {
+    return this._openCaseInternal(params);
+  }
+
+  createCase(params) {
+    return this._openCaseInternal(params);
+  }
+
+  _openCaseInternal(params) {
     const { title, claimText, creatorDid, initialDeposit = 0, evidence = [] } = params;
 
     if (!title || !claimText || !creatorDid) {
@@ -78,12 +86,79 @@ export class CaseManager {
       juryVotes: [],
       finalVerdict: null,
       judgeSummary: null,
-      retrialHistory: []
+      retrialHistory: [],
+      timerResetCount: 0
     };
 
     this.cases.set(caseId, courtroomCase);
     this.deposits.set(caseId, initialDeposit > 0 ? [{ depositorDid: creatorDid, amount: initialDeposit }] : []);
     return courtroomCase;
+  }
+
+  /**
+   * Layer 1.3 / Anti-Griefing Defense (PRD §4.3.B & Caveat 6)
+   * Submits empirical evidence to a docket with CID validation and escalating reset deposits.
+   * Prevents bad-faith stakers from resetting the 14-day clock indefinitely with trivial spam.
+   */
+  submitEvidence(params) {
+    const { caseId, contributorDid, uri, description, relevanceScore = 1.0, depositAmount = 0 } = params;
+    if (!this.cases.has(caseId)) throw new Error(`Case not found: ${caseId}`);
+    if (!contributorDid) throw new Error('contributorDid is required');
+    if (!uri) throw new Error('Evidence URI is required');
+
+    // Rule 1: Decentralized Storage CID Verification (RFC-compliant IPFS, Arweave, or DOI)
+    const isDecentralizedCid = /^ipfs:\/\/(baf[a-z0-9]+|Qm[a-zA-Z0-9]+)/i.test(uri) ||
+                               /^ar:\/\/[a-zA-Z0-9_-]{32,64}/.test(uri) ||
+                               /^https:\/\/(doi\.org|gateway\.ipfs\.io|arweave\.net)\/.+/i.test(uri);
+
+    if (!isDecentralizedCid) {
+      throw new Error('Evidence must point to a verifiable decentralized CID (ipfs://, ar://) or canonical DOI');
+    }
+
+    const c = this.cases.get(caseId);
+    if (c.status !== CASE_STATUS.OPEN && c.status !== CASE_STATUS.APPEALED) {
+      throw new Error(`Cannot submit evidence to case in status: ${c.status}`);
+    }
+
+    // Rule 2: Substantive Relevance Threshold Gate
+    const isSubstantive = relevanceScore >= 0.70;
+
+    // Rule 3: Escalating Reset Deposit (First reset free, then 50 * 2^(count - 1): $50, $100, $200)
+    const requiredDeposit = c.timerResetCount === 0 ? 0 : 50 * Math.pow(2, c.timerResetCount - 1);
+    const hasSufficientDeposit = depositAmount >= requiredDeposit;
+
+    const evidenceEntry = {
+      evidenceId: `evi_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      contributorDid,
+      uri,
+      description: description || '',
+      relevanceScore,
+      submittedAt: Date.now(),
+      isSubstantive,
+      timerResetGranted: false,
+      depositPaid: depositAmount
+    };
+
+    if (isSubstantive && hasSufficientDeposit) {
+      // Grant clock reset
+      evidenceEntry.timerResetGranted = true;
+      c.lastActivityAt = Date.now();
+      c.timerResetCount += 1;
+      if (depositAmount > 0) {
+        c.totalDepositPool += depositAmount;
+        const pool = this.deposits.get(caseId);
+        pool.push({ depositorDid: contributorDid, amount: depositAmount });
+      }
+    }
+
+    c.evidence.push(evidenceEntry);
+    return {
+      evidenceId: evidenceEntry.evidenceId,
+      timerResetGranted: evidenceEntry.timerResetGranted,
+      timerResetCount: c.timerResetCount,
+      requiredDepositForNextReset: 50 * Math.pow(2, Math.max(0, c.timerResetCount - 1)),
+      evidence: evidenceEntry
+    };
   }
 
   depositWager(caseId, depositorDid, amount) {

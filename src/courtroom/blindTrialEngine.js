@@ -136,6 +136,87 @@ export class BlindTrialEngine {
       instructionsForJuror: 'Review purely the empirical spatio-temporal propositions and attached verified citations. Disregard prior personal, political, or celebrity knowledge.'
     };
   }
+
+  /**
+   * Layer 1.3 / Context-Leakage Defense (Roadmap Caveat 8 & PRD §4.3.B)
+   * Deep Semantic Paraphraser: Converts breaking viral news into formal symbolic propositions
+   * to strip stylometric fingerprints and prevent jurors from identifying current events.
+   */
+  deepSemanticParaphrase(text) {
+    if (!text) return '';
+    let sanitized = text
+      .replace(/^(BREAKING|SHOCKING|EXCLUSIVE|LEAKED|JUST IN|ALERT):\s*/gi, '')
+      .replace(/https?:\/\/\S+/gi, '')
+      .replace(/#\w+/g, '')
+      .trim();
+
+    sanitized = this.anonymizeEntities(sanitized);
+
+    // Normalize action verbs into formal predicate clauses
+    sanitized = sanitized
+      .replace(/\b(fired|terminated|ousted|dismissed)\b/gi, 'executed involuntary cessation of contract with')
+      .replace(/\b(signed|inked|partnered with)\b/gi, 'entered bilateral formal agreement with')
+      .replace(/\b(stole|embezzled|misappropriated)\b/gi, 'executed unauthorized transfer of assets from')
+      .replace(/\b(lied about|falsified)\b/gi, 'asserted statement conflicting with physical records regarding');
+
+    return `Proposition P: ${sanitized}`;
+  }
+
+  /**
+   * Generates a plausible synthetic decoy docket for calibration (Caveat 8).
+   */
+  generateDecoyDocket(category = 'SCIENCE') {
+    const decoyId = `decoy_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const syntheticTemplates = [
+      {
+        title: 'Laboratory replication of Room-Temperature Superconductor in Lead-Apatite',
+        claim: 'Sample LK-99 exhibited diamagnetic levitation at 295 Kelvin under ambient pressure.',
+        evidenceCid: 'ipfs://bafkreidecoycalibrationlk99experimentleadapatite001'
+      },
+      {
+        title: 'Atmospheric methane anomaly over Martian Gale Crater',
+        claim: 'Curiosity spectrometer detected localized methane spike exceeding 21 ppb on Sol 2446.',
+        evidenceCid: 'ipfs://bafkreidecoysol2446curiosityspectrometrygale002'
+      },
+      {
+        title: 'Protein folding conformational transition at sub-nanosecond scale',
+        claim: 'Cryo-EM resolved intermediate transition state Alpha-Helix to Beta-Sheet at 1.8 Angstrom.',
+        evidenceCid: 'ipfs://bafkreidecoycryoemresolutionconformational003'
+      }
+    ];
+
+    const pick = syntheticTemplates[Math.floor(Math.random() * syntheticTemplates.length)];
+    return {
+      caseId: decoyId,
+      title: pick.title,
+      claimText: pick.claim,
+      category,
+      isDecoy: true,
+      syntheticEvidenceCid: pick.evidenceCid,
+      timerResetCount: 0,
+      createdAt: Date.now()
+    };
+  }
+
+  /**
+   * Interleaves synthetic decoy dockets into juror feeds (Caveat 8).
+   * Ensures jurors cannot determine whether a case carries financial stakes.
+   */
+  interleaveDecoyDockets(cases, decoyRatio = 0.25) {
+    if (!Array.isArray(cases) || cases.length === 0) return [];
+    const interleaved = [];
+    let decoyCounter = 0;
+
+    for (let i = 0; i < cases.length; i++) {
+      interleaved.push(cases[i]);
+      if ((i + 1) % Math.max(1, Math.round(1 / decoyRatio)) === 0) {
+        interleaved.push(this.generateDecoyDocket());
+        decoyCounter++;
+      }
+    }
+
+    return interleaved;
+  }
 }
 
 export const blindTrialEngine = new BlindTrialEngine();

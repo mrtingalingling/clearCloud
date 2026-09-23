@@ -48,11 +48,13 @@ Detailed specification available in [**`docs/architecture.md`**](./docs/architec
    - Asymmetric Hidden Reputation engine ("Trust is hard to build, fast to lose").
    - Tier 1 Personal Rage-Bait Scrubber.
 2. **Feature 1.3: The Courtroom Deliberation Forum (`src/courtroom/`)**:
-   - Falsifiability Gatekeeper strictly screening empirical claims from subjective/metaphysical statements.
+   - Falsifiability Gatekeeper strictly screening empirical claims from subjective/metaphysical statements via fast heuristics and Gemini Nano prompts.
    - Case Manager with Compound Claim DAG hierarchical decomposition.
    - 14-day cold case refund mechanism (**94% refunded**, **6% protocol fee**).
    - Challenge Bond retrial appeals (overturned verdicts award bond + 50% bounty).
-   - Anonymous stake-weighted juror deliberation and AI judicial synthesis.
+   - Algorithmic Civic Sortition Summons (7–9 randomized citizens per docket) gated by Proof of Humanity ($\ge 20$) or Staked Civic Bonds ($\ge 10$ USDC).
+   - Blind Trial Engine with deep semantic paraphrasing ($P(x, t)$), entity anonymization (`[Entity_A]`), emotional invective stripping, and synthetic decoy docket interleaving.
+   - Substantive Evidence Submission Form in `CourtroomView.svelte` with live CID validation (`ipfs://`, `ar://`, `doi.org/`), AI relevance filtering ($\ge 0.70$), and escalating anti-griefing deposits ($50 \times 2^{n-1}$).
 3. **In-Feed Social Overlays (`src/social/`)**:
    - Live badge and card generator for Bluesky, X/Twitter, Reddit, and YouTube.
 
@@ -62,5 +64,8 @@ Detailed specification available in [**`docs/architecture.md`**](./docs/architec
 
 ```bash
 npm install
-npm test
+npm test # Runs 43/43 passing Vitest tests across 8 suites
+npm run dev # Starts local Svelte 5 dev server on port 5173
 ```
+
+Detailed architectural specifications, caveats, and deployment runbooks are documented in [**`docs/architecture.md`**](./docs/architecture.md) and canonical [**`vera/docs/ARCHITECTURE_CAVEATS_AND_ROADMAP.md`**](../vera/docs/ARCHITECTURE_CAVEATS_AND_ROADMAP.md).

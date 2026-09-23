@@ -50,14 +50,30 @@ graph TD
   - Swift deduction: $-18.0$ for debunked claims, $-12.0$ for rage-bait, $-25.0$ for courtroom slashing.
 
 ### 2.2 The Courtroom Subsystem (`src/courtroom/`)
-- **Falsifiability Gatekeeper (`falsifiabilityGatekeeper.js`)**: Screens claims before docket admission, blocking unprovable subjective/aesthetic statements.
+- **Falsifiability Gatekeeper (`falsifiabilityGatekeeper.js`)**: Screens claims before docket admission, combining fast heuristic filters with Chrome Gemini Nano SLM evaluation.
 - **Case Manager (`caseManager.js`)**:
   - Compound Claim DAG hierarchical decomposition (`decomposeClaim`).
   - 14-day stale cold case refund execution (**94% refunded**, **6% maintenance fee** retained).
   - Challenge Bond retrial appeals (overturned verdicts award bond + 50% bounty; reaffirmed forfeit bond).
+  - Substantive evidence validation enforcing decentralized CID/DOI references, relevance $\ge 0.70$, and escalating reset deposits ($50 \times 2^{n-1}$).
+- **Blind Trial Engine (`blindTrialEngine.js`)**:
+  - Entity masking (`[Entity_A]`) and emotional rhetoric scrubbing.
+  - Deep semantic paraphrasing ($P(x, t)$) to suppress stylometric leakage.
+  - Interleaving synthetic decoy dockets to prevent attention brigading.
+- **Civic Sortition Engine (`sortitionEngine.js`)**:
+  - Randomly summons 7–9 citizen jurors from the registered registry.
+  - Sybil protection: Enforces Proof of Humanity score $\ge 20$ or Staked Civic Bond $\ge 10$ USDC.
+  - Automatic recusal of bettors holding active stakes on the docket.
 - **Jury & AI Judge Engine (`juryEngine.js`)**:
-  - Stake-weighted anonymous juror voting on evidence citations.
-  - AI Judge judicial summary synthesizing consensus.
+  - Disinterested citizen juror voting on citations.
+  - AI Judge judicial summary synthesizing consensus and issuing signed attestations.
 
 ### 2.3 Social Overlays (`src/social/`)
 - **Overlay Cards (`overlayService.js`)**: Renders epistemic badges and cards across Bluesky, X, Reddit, and YouTube with direct links to Courtroom case dockets.
+
+---
+
+## 3. Cross-Repository Architectural Invariants
+
+For cross-repository architecture specifications, multi-module connection flows, remaining production caveats, and maintenance guides, consult the authoritative canonical document:
+[**`vera/docs/ARCHITECTURE_CAVEATS_AND_ROADMAP.md`**](../../vera/docs/ARCHITECTURE_CAVEATS_AND_ROADMAP.md).

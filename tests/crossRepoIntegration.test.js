@@ -113,4 +113,73 @@ describe('Cross-Repo End-to-End Pipeline: vera -> veracities.social -> clearClou
     expect(overlayCard.badge.label).toBe('VERIFIED');
     expect(overlayCard.actionUrl).toBe(`https://veracities.social/courtroom/${courtCase.caseId}`);
   });
+
+  it('archives courtroom evidence to pluggable decentralized storage and federates via ATProto lexicons', async () => {
+    const { atprotoStorageBridge } = await import('../src/courtroom/atprotoStorageBridge.js');
+
+    // 1. Verify default provider is IPFS
+    expect(atprotoStorageBridge.getActiveProviderName()).toBe('ipfs');
+
+    // 2. Archive primary whistleblower evidence to IPFS
+    const evidenceUpload = await atprotoStorageBridge.archiveEvidence(
+      'case_cross_storage_01',
+      'did:plc:whistleblower_123',
+      {
+        documentTitle: 'Scripps Mauna Loa Sensor Logs',
+        recordedPpm: 421.3,
+        timestamp: '2024-05-15T12:00:00Z'
+      }
+    );
+
+    expect(evidenceUpload.provider).toBe('ipfs');
+    expect(evidenceUpload.uri).toMatch(/^ipfs:\/\/bafkrei/);
+    expect(evidenceUpload.cid).toMatch(/^bafkrei/);
+    expect(evidenceUpload.gatewayUrl).toBe(`https://ipfs.io/ipfs/${evidenceUpload.cid}`);
+
+    // 3. Publish federated docket with ATProto lexicon schema
+    const federatedDocket = await atprotoStorageBridge.publishCaseDocket({
+      caseId: 'case_cross_storage_01',
+      title: 'Atmospheric CO2 Level Benchmark',
+      claimText: 'Atmospheric CO2 reached 420 ppm in 2024.',
+      category: 'STATISTICAL',
+      creatorDid: 'did:plc:alice_scientist',
+      dagNodes: [{ nodeId: 'sub_0', text: 'CO2 reached 420 ppm', dependencies: [] }],
+      evidence: [evidenceUpload.uri]
+    });
+
+    expect(federatedDocket.$type).toBe('social.veracities.courtroom.docket');
+    expect(federatedDocket.evidenceCids[0]).toBe(evidenceUpload.uri);
+
+    // 4. Publish federated judicial verdict
+    const federatedVerdict = await atprotoStorageBridge.publishVerdict({
+      caseId: 'case_cross_storage_01',
+      claimText: 'Atmospheric CO2 reached 420 ppm in 2024.',
+      verdict: 'VERIFIED',
+      confidence: 0.98,
+      jurorDids: ['did:plc:juror_1', 'did:plc:juror_2'],
+      decisiveWhistleblowerDid: 'did:plc:whistleblower_123',
+      primaryEvidence: evidenceUpload.uri,
+      attestationId: 'attest_cross_01',
+      signatures: ['0xsig1', '0xsig2']
+    });
+
+    expect(federatedVerdict.$type).toBe('social.veracities.courtroom.verdict');
+    expect(federatedVerdict.primaryEvidenceCid).toBe(evidenceUpload.uri);
+    expect(federatedVerdict.verdictAttestationCid).toMatch(/^ipfs:\/\/bafkrei/);
+
+    // 5. Test Hot-Swapping to Arweave decentralized storage provider
+    atprotoStorageBridge.setStorageProvider('arweave');
+    expect(atprotoStorageBridge.getActiveProviderName()).toBe('arweave');
+
+    const arweaveUpload = await atprotoStorageBridge.archiveEvidence(
+      'case_cross_storage_02',
+      'did:plc:whistleblower_456',
+      'Permanent geological core sample ledger'
+    );
+
+    expect(arweaveUpload.provider).toBe('arweave');
+    expect(arweaveUpload.uri).toMatch(/^ar:\/\/[A-Za-z0-9_-]{43}$/);
+    expect(arweaveUpload.gatewayUrl).toBe(`https://arweave.net/${arweaveUpload.cid}`);
+  });
 });
+

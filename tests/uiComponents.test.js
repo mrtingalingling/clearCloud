@@ -140,5 +140,30 @@ describe('clearCloud UI Components Logic Integration', () => {
       expect(synthesis.verdict).toBe('VERIFIED');
       expect(synthesis.confidence).toBeGreaterThanOrEqual(0.667);
     });
+
+    it('enforces Separation of Powers recusal when a juror has a validation market conflict', () => {
+      const c = caseManager.openCase({
+        title: 'Conflict Test Case',
+        claimText: 'Company X reports Q3 revenue beat by 20%',
+        creatorDid: viewerDid,
+        initialDeposit: 100
+      });
+
+      const conflictedJurorDid = 'did:plc:conflicted_staker';
+      // Mark as recused due to active financial stake in veracities.social validation market
+      juryEngine.recuseJuror(c.caseId, conflictedJurorDid, 'Active financial stake in validation market');
+
+      expect(juryEngine.isRecused(c.caseId, conflictedJurorDid)).toBe(true);
+      expect(() => {
+        juryEngine.castVote({
+          caseId: c.caseId,
+          jurorDid: conflictedJurorDid,
+          vote: 'AFFIRM',
+          argument: 'Looks true to me, I have high confidence.',
+          weight: 1.0
+        });
+      }).toThrow(/RECUSED: Juror did:plc:conflicted_staker is disqualified/);
+    });
   });
 });
+

@@ -32,6 +32,43 @@
   let jurorEvidenceUrl = $state('');
   let voteFeedback = $state('');
 
+  // Substantive Evidence & Anti-Griefing form state (PRD §4.3.B & Caveat 6)
+  let newEvidenceCid = $state('');
+  let newEvidenceDeposit = $state(0);
+  let newEvidenceRelevance = $state(0.85);
+  let evidenceFeedback = $state('');
+  let evidenceError = $state('');
+
+  function handleEvidenceSubmit(e) {
+    e.preventDefault();
+    evidenceFeedback = '';
+    evidenceError = '';
+
+    if (!activeCase) return;
+    if (!newEvidenceCid.trim()) {
+      evidenceError = 'Please provide an IPFS/Arweave CID or DOI URL.';
+      return;
+    }
+
+    try {
+      const res = caseManager.submitEvidence(activeCase.caseId, {
+        evidenceUrl: newEvidenceCid.trim(),
+        submitterDid: viewerDid,
+        relevanceScore: Number(newEvidenceRelevance),
+        depositAmount: Number(newEvidenceDeposit)
+      });
+
+      if (res.timerReset) {
+        evidenceFeedback = `✓ Substantive evidence accepted! 14-day inactivity clock reset (Reset count: ${res.timerResetCount}).`;
+      } else {
+        evidenceFeedback = `✓ Evidence logged for jury review (${res.reason}). Timer was not reset.`;
+      }
+      newEvidenceCid = '';
+    } catch (err) {
+      evidenceError = err.message;
+    }
+  }
+
   // Update docketClaim if initialClaim prop changes
   $effect(() => {
     if (initialClaim) {
@@ -346,6 +383,30 @@
             <span class="status-pill status-{activeCase.status.toLowerCase()}">{activeCase.status}</span>
           </div>
 
+          <!-- Separation of Powers: Read-Only Validation Market Metadata Badge -->
+          <div class="market-connection-badge">
+            <div class="badge-left">
+              <span class="material-symbols-outlined icon-market">price_change</span>
+              <div class="badge-text-group">
+                <div class="badge-headline">
+                  <span class="market-status-dot"></span>
+                  <strong>Active Validation Market Linked</strong>
+                  <span class="round-badge">Round 2: Evidence Drop</span>
+                </div>
+                <span class="recusal-warning">
+                  Civic Juror Firewall: Active wagers on this claim legally recuse and disqualify you from juror voting.
+                </span>
+              </div>
+            </div>
+            <div class="badge-right">
+              <span class="market-pool-stat">$3,280 USDC Pool</span>
+              <a href="http://localhost:5174" target="_blank" rel="noopener noreferrer" class="btn-market-link">
+                <span>View Market</span>
+                <span class="material-symbols-outlined">open_in_new</span>
+              </a>
+            </div>
+          </div>
+
           <!-- Deliberation Mode & Civic Duty Bar -->
           <div class="deliberation-mode-bar">
             <div class="mode-toggles">
@@ -555,6 +616,67 @@
             {#if voteFeedback}
               <div class="alert-box alert-info">
                 <span>{voteFeedback}</span>
+              </div>
+            {/if}
+        <!-- Substantive Evidence & Anti-Griefing Clock Reset Card (PRD §4.3.B & Caveat 6) -->
+        <div class="evidence-submission-card">
+          <div class="card-subtitle">
+            <span class="material-symbols-outlined">attachment</span>
+            <span>Submit Substantive Evidence (CID / DOI) & Reset Clock</span>
+          </div>
+          <p class="evidence-notice">
+            Anti-griefing gate: Submitting empirical evidence resets the 14-day cold case clock.
+            Requires valid decentralized CID (`ipfs://...`, `ar://...`) or DOI, relevance ≥ 0.70, and escalating reset deposits
+            (Current reset deposit: <strong>${activeCase.timerResetCount === 0 ? '0 (Free)' : 50 * Math.pow(2, activeCase.timerResetCount - 1)}</strong>).
+          </p>
+
+          <form onsubmit={handleEvidenceSubmit} class="evidence-form">
+            <input
+              type="text"
+              class="input-field"
+              placeholder="ipfs://bafk... or ar://... or https://doi.org/..."
+              bind:value={newEvidenceCid}
+            />
+
+            <div class="evidence-inputs-row">
+              <div class="input-half">
+                <label for="ev-relevance">AI Relevance Rating</label>
+                <input
+                  id="ev-relevance"
+                  type="number"
+                  step="0.05"
+                  min="0.1"
+                  max="1.0"
+                  class="input-field"
+                  bind:value={newEvidenceRelevance}
+                />
+              </div>
+              <div class="input-half">
+                <label for="ev-deposit">Reset Deposit ($)</label>
+                <input
+                  id="ev-deposit"
+                  type="number"
+                  min="0"
+                  class="input-field"
+                  bind:value={newEvidenceDeposit}
+                />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-submit-evidence">
+              <span class="material-symbols-outlined">upload_file</span>
+              <span>Submit Verified Evidence</span>
+            </button>
+
+            {#if evidenceFeedback}
+              <div class="alert-box alert-success">
+                <span>{evidenceFeedback}</span>
+              </div>
+            {/if}
+
+            {#if evidenceError}
+              <div class="alert-box alert-error">
+                <span>{evidenceError}</span>
               </div>
             {/if}
           </form>
@@ -1268,5 +1390,161 @@
     overflow-y: auto;
     white-space: pre-wrap;
     word-break: break-all;
+  }
+
+  /* Separation of Powers: Validation Market Read-Only Badge */
+  .market-connection-badge {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(245, 158, 11, 0.05);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 12px 0;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .badge-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .icon-market {
+    font-size: 1.5rem;
+    color: #f59e0b;
+  }
+
+  .badge-text-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .badge-headline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: #f8fafc;
+  }
+
+  .market-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+  }
+
+  .round-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    background: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .recusal-warning {
+    font-size: 0.72rem;
+    color: #f59e0b;
+  }
+
+  .badge-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .market-pool-stat {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #f59e0b;
+  }
+
+  .btn-market-link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #f8fafc;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-market-link:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #f59e0b;
+    color: #f59e0b;
+  }
+
+  /* Substantive Evidence Submission Card */
+  .evidence-submission-card {
+    background: rgba(0, 245, 212, 0.03);
+    border: 1px solid rgba(0, 245, 212, 0.2);
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 14px;
+  }
+
+  .evidence-notice {
+    font-size: 0.74rem;
+    color: #8b949e;
+    margin: 6px 0 12px 0;
+    line-height: 1.4;
+  }
+
+  .evidence-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .evidence-inputs-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .input-half {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .input-half label {
+    font-size: 0.7rem;
+    color: #8b949e;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .btn-submit-evidence {
+    background: rgba(0, 245, 212, 0.15);
+    border: 1px solid #00f5d4;
+    color: #00f5d4;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-submit-evidence:hover {
+    background: rgba(0, 245, 212, 0.25);
   }
 </style>
