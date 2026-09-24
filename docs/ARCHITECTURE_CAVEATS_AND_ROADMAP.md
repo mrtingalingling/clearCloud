@@ -1,7 +1,7 @@
 # clearCloud: Architecture Caveats & Implementation Status
 
 > **Canonical Document Reference**: The master, cross-repository architecture blueprint, deployment guide, and remaining caveats ledger is centralized in [**`vera/docs/ARCHITECTURE_CAVEATS_AND_ROADMAP.md`**](../../vera/docs/ARCHITECTURE_CAVEATS_AND_ROADMAP.md). Refer to that document for the unified ecosystem specification.
-> **Repository Test Health**: **43 / 43 Vitest Tests Passing (100% Green)** across 8 test suites.
+> **Repository Test Health**: **68 / 68 Vitest Tests Passing (100% Green)** across 9 test suites.
 
 ---
 
@@ -22,7 +22,7 @@
 
 ## 2. Implemented Features & Verification Matrix
 
-All Layer 1 features required by the PRD are fully implemented in `clearCloud` and verified with **43 passing tests**:
+All Layer 1 features required by the PRD are fully implemented in `clearCloud` and verified with **68 passing tests**:
 
 - **Feature 1.1: The Epistemic Feed & Relational Circles (`src/feed/`)**:
   - 3-tier proximity circles: Tier 1 (Close Friends with personal rage-bait scrubber), Tier 2 (Friends/Acquaintances), Tier 3 (Network-Wide).
@@ -36,6 +36,12 @@ All Layer 1 features required by the PRD are fully implemented in `clearCloud` a
   - $2\times$ Challenge Bond retrial escrow appeals (50% bounty on overturned verdicts).
   - Algorithmic Civic Sortition Summons (7–9 randomized citizens per docket).
   - Substantive evidence submission form with live CID validation (`ipfs://`, `ar://`, `doi.org/`), AI relevance gate ($\ge 0.70$), and escalating anti-griefing deposits ($50 \times 2^{n-1}$).
+- **Feature 1.4: Epistemic Credit Score & Economic Governance (`src/config/`, `src/courtroom/`, `src/feed/`)**:
+  - Epistemic Credit Score interaction weighting: Quadratic damping for low-rep likes/reactions ($\max(0.01, (\text{rep}/50)^2)$); juror vote credit scaling ($\max(0.05, \text{rep}/50)$).
+  - Stake-to-Repost guard: Escrow stake required for sub-40 rep users (`REQUIRED_REPOST_STAKE_USDC`: 5.0 USDC).
+  - Influencer reach staking: Accounts with $\ge 10,000$ followers and sub-60 reputation must post audience-scaled bonds.
+  - Unbounded exponential disinformation penalties ($2^{\Delta/5} \times 2^{\text{strikes}}$ with no floor or ceiling).
+  - Multi-Origin Case Initiation (`SOCIAL_MEDIA` vs `EXTENSION_APP`) with validation wagers dispatched to `veracities.social`.
 - **Social Overlays (`src/social/`)**:
   - In-feed epistemic badge generator for Bluesky, X/Twitter, Reddit, and YouTube.
 
