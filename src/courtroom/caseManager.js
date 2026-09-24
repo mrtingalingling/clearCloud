@@ -1,4 +1,5 @@
 import { falsifiabilityGatekeeper } from './falsifiabilityGatekeeper.js';
+import { reputationStakeGuard } from './reputationStakeGuard.js';
 
 export const CASE_STATUS = {
   OPEN: 'OPEN',
@@ -55,7 +56,17 @@ export class CaseManager {
   }
 
   _openCaseInternal(params) {
-    const { title, claimText, creatorDid, initialDeposit = 0, evidence = [] } = params;
+    const {
+      title,
+      claimText,
+      creatorDid,
+      initialDeposit = 0,
+      evidence = [],
+      source = 'SOCIAL_MEDIA',
+      wager = null,
+      rep = 50.0,
+      disinfoStrikes = 0
+    } = params;
 
     if (!title || !claimText || !creatorDid) {
       throw new Error('Title, claimText, and creatorDid are required to docket a case');
@@ -66,20 +77,35 @@ export class CaseManager {
       throw new Error(`Courtroom Rejection: ${gateCheck.reason}`);
     }
 
+    // Evaluate initiation origin and validation wager requirements
+    const wagerCheck = reputationStakeGuard.evaluateCaseInitiation({
+      creatorDid,
+      source,
+      wager,
+      rep,
+      disinfoStrikes
+    });
+
+    if (!wagerCheck.allowed) {
+      throw new Error(`Courtroom Rejection: ${wagerCheck.reason}`);
+    }
+
     const caseId = `case_${this.nextCaseId++}`;
     const now = Date.now();
     const dagNodes = this.decomposeClaim(claimText);
+    const totalInitialDeposit = initialDeposit + (wagerCheck.wagerMetadata.hasWager ? wagerCheck.wagerMetadata.amount : 0);
 
     const courtroomCase = {
       caseId,
       title,
       claimText,
       creatorDid,
+      source: wagerCheck.source,
       status: CASE_STATUS.OPEN,
       category: gateCheck.category,
       createdAt: now,
       lastActivityAt: now,
-      totalDepositPool: initialDeposit,
+      totalDepositPool: totalInitialDeposit,
       isDagCompound: dagNodes.length > 1,
       dagNodes,
       evidence: [...evidence],
@@ -87,11 +113,12 @@ export class CaseManager {
       finalVerdict: null,
       judgeSummary: null,
       retrialHistory: [],
-      timerResetCount: 0
+      timerResetCount: 0,
+      wager: wagerCheck.wagerMetadata
     };
 
     this.cases.set(caseId, courtroomCase);
-    this.deposits.set(caseId, initialDeposit > 0 ? [{ depositorDid: creatorDid, amount: initialDeposit }] : []);
+    this.deposits.set(caseId, totalInitialDeposit > 0 ? [{ depositorDid: creatorDid, amount: totalInitialDeposit }] : []);
     return courtroomCase;
   }
 

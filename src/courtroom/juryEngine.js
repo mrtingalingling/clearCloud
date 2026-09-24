@@ -5,6 +5,8 @@
  */
 
 import { sortitionEngine } from './sortitionEngine.js';
+import { reputationStakeGuard } from './reputationStakeGuard.js';
+import { getGovernancePolicy } from '../config/governancePolicy.js';
 
 export class JuryEngine {
   constructor() {
@@ -65,6 +67,17 @@ export class JuryEngine {
       throw new Error(`Juror ${jurorDid} has already cast a vote in case ${caseId}`);
     }
 
+    let finalWeight = weight;
+    if (params.rep !== undefined || getGovernancePolicy().CREDIT_SCORE_WEIGHTING_ENABLED) {
+      const jurorRep = params.rep !== undefined ? Number(params.rep) : 50.0;
+      const weightResult = reputationStakeGuard.calculateInteractionWeight({
+        userDid: jurorDid,
+        rep: jurorRep,
+        interactionType: 'VOTE'
+      });
+      finalWeight = weightResult.weight;
+    }
+
     const voteRecord = {
       voteId: `vote_${votes.length + 1}`,
       caseId,
@@ -72,7 +85,7 @@ export class JuryEngine {
       vote,
       argument,
       evidenceUrl: evidenceUrl || null,
-      weight,
+      weight: finalWeight,
       timestamp: Date.now()
     };
 

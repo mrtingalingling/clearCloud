@@ -19,11 +19,13 @@ graph TD
         P_Market["Validation Market Staking & Payout Pools"]
         P_DAO["Epistemic DAO Governance ('EnDAOsment')"]
         P_Settle["Courtroom Settlement Protocol (14-day cold & challenge bonds)"]
+        P_Proxy["UUPS / ERC-1967 Proxies & Modular DAO Adapters"]
     end
 
     subgraph LayerApp ["Unified Social Application (mrtingalingling/clearCloud)"]
         A_Feed["The Feed & Relational Circles (Feature 1.1)"]
         A_Grounded["Groundedness Index (G) & Hidden Rep"]
+        A_Guard["Reputation Stake Guard & Credit Score (Feature 1.4)"]
         A_Court["The Courtroom Deliberation Forum (Feature 1.3)"]
         A_DAG["Compound Claim DAG Decomposition"]
         A_Jury["Juror Voting & AI Judge Synthesis"]
@@ -31,7 +33,11 @@ graph TD
     end
 
     Layer0 -->|"Exports @vera/core API (local AI, PII scrubber)"| LayerApp
+    Layer0 -.->|"Initiates Case Docket via Extension"| A_Court
+    LayerApp -->|"Dispatches validation wagers & case dockets"| P_Market
+    LayerApp -->|"Dispatches M-of-N signed juror attestations"| LayerProtocol
     LayerProtocol -->|"Provides ATProto Auth & Staking Settlement Protocol"| LayerApp
+    P_Proxy -.->|"Wraps & upgrades contracts"| P_Market
 ```
 
 ---
@@ -70,6 +76,33 @@ graph TD
 
 ### 2.3 Social Overlays (`src/social/`)
 - **Overlay Cards (`overlayService.js`)**: Renders epistemic badges and cards across Bluesky, X, Reddit, and YouTube with direct links to Courtroom case dockets.
+
+### 2.4 Epistemic Credit Score & Economic Governance (`src/config/`, `src/courtroom/`, `src/feed/`)
+- **Epistemic Credit Score Interaction Weighting (`reputationStakeGuard.calculateInteractionWeight`)**:
+  - `CREDIT_SCORE_WEIGHTING_ENABLED: false` (feature-flagged, disabled by default).
+  - When enabled: Citizen reputation acts like a credit score affecting all platform interactions.
+  - Likes/reactions from low-reputation or suspected astroturfing accounts are quadratically down-weighted ($\max(0.01, (\text{rep} / 50.0)^2)$), while high-reputation accounts earn up to $2.0\times$ weight boost.
+  - Juror voting weights scale with credit score ($\max(0.05, \text{rep} / 50.0)$).
+- **Stake-to-Repost Guard (`reputationStakeGuard.evaluateStakeToRepost`)**:
+  - `STAKE_TO_REPOST_ENABLED: false` (feature-flagged, disabled by default).
+  - When enabled: Amplifying/reposting content requires low-reputation users ($\text{rep} < 40.0$) to deposit an escrow stake (`REQUIRED_REPOST_STAKE_USDC`: 5.0 USDC).
+- **Influencer Reach Staking (`reputationStakeGuard.evaluateStakeToPost`)**:
+  - `INFLUENCER_STAKE_ENABLED: false` (feature-flagged, disabled by default).
+  - Accounts with $\ge 10,000$ followers carry elevated systemic risk. If their reputation falls below $60.0$, they must deposit an audience-scaled stake bond ($20 \text{ USDC} \times (1 + \log_{10}(\text{followers}/10000))$).
+- **Exponential Disinformation Penalties (Unbounded Cost Curve)**:
+  - `EXPONENTIAL_DISINFO_PENALTY_ENABLED: false` (feature-flagged, disabled by default).
+  - Stakes escalate exponentially with reputation deficits ($2^{(\text{threshold} - \text{rep}) / 5}$) and disinformation strikes ($2^{\text{strikes}}$).
+  - There is **no cost ceiling**, making repeated disinformation campaigns financially impossible to sustain.
+- **Low-Reputation Wager Surcharges & Case Initiation (`caseManager.js`, `reputationStakeGuard.js`)**:
+  - `CASE_WAGER_REQUIRED: false` (feature-flagged, disabled by default).
+  - Supports docket initiation from both `SOCIAL_MEDIA` and `EXTENSION_APP`.
+  - Low-reputation or penalized bettors incur cost surcharges in validation markets.
+
+### 2.5 EnDAOsment Governance Integration
+Citizen track records in `clearCloud` directly connect to Layer 3 Epistemic Governance maintained in `veracities.social/contracts/EpistemicCrsManager.sol`:
+1. **Reputation to Checkpointed CRS**: Verified engagement and juror accuracy map to Vera's 4 Epistemic Tiers, which `EpistemicCrsManager.sol` checkpoints by block number.
+2. **Quadratic Deliberation**: High-tier Sages vet proposals in Stage 1 (`ApprovalGovernor.sol`), and citizens allocate quadratic credit budgets ($V = \lfloor\sqrt{C}\rfloor$) in Stage 2 (`QuadraticGovernor.sol`).
+3. **UUPS Proxy Decoupling**: Upgrades to the upstream framework never erase `clearCloud` citizen voting checkpoints or proposal records stored in persistent ERC-1967 proxy storage.
 
 ---
 
