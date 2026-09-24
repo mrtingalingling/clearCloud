@@ -98,6 +98,11 @@ graph TD
   - Supports docket initiation from both `SOCIAL_MEDIA` and `EXTENSION_APP`.
   - Low-reputation or penalized bettors incur cost surcharges in validation markets.
 
+### 2.5 EnDAOsment Governance Integration
+Citizen track records in `clearCloud` directly connect to Layer 3 Epistemic Governance maintained in `veracities.social/contracts/EpistemicCrsManager.sol`:
+1. **Reputation to Checkpointed CRS**: Verified engagement and juror accuracy map to Vera's 4 Epistemic Tiers, which `EpistemicCrsManager.sol` checkpoints by block number.
+2. **Quadratic Deliberation**: High-tier Sages vet proposals in Stage 1 (`ApprovalGovernor.sol`), and citizens allocate quadratic credit budgets ($V = \lfloor\sqrt{C}\rfloor$) in Stage 2 (`QuadraticGovernor.sol`).
+3. **UUPS Proxy Decoupling**: Upgrades to the upstream framework never erase `clearCloud` citizen voting checkpoints or proposal records stored in persistent ERC-1967 proxy storage.
 
 ---
 

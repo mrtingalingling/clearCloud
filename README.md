@@ -72,6 +72,20 @@ Detailed specification available in [**`docs/architecture.md`**](./docs/architec
 
 ---
 
+## 🏛️ DAO Governance Integration: EnDAOsment Smart Contract Framework
+
+`clearCloud` citizens who build proven reputation through high Groundedness ($G$), quality citations, and accurate juror sortition deliberations directly map into the **EnDAOsment Epistemic DAO governance framework** powered by [`veracities.social/contracts/EpistemicCrsManager.sol`](https://github.com/mrtingalingling/veracities.social):
+
+1. **Reputation to Credit Budgets**: Citizen tiers unlock quadratic credit budgets:
+   - *Tier 1 (Novice)*: 100 Credits
+   - *Tier 2 (Contributor)*: 500 Credits
+   - *Tier 3 (Arbiter)*: 1,500 Credits
+   - *Tier 4 (Sage Elder)*: 3,000 Credits
+2. **Two-Stage Deliberation**: Sages vet proposals in Stage 1 (`ApprovalGovernor`), while citizens deploy credit budgets quadratically ($V = \lfloor\sqrt{C}\rfloor$) in Stage 2 (`QuadraticGovernor`).
+3. **Safe Timelocks & Upgrade Decoupling**: Succeeded proposals transition through a 24–48h `TimelockControllerUpgradeable` inspection delay, with all reputation checkpoints preserved in persistent ERC-1967 proxy storage.
+
+---
+
 ## 🚀 Quickstart & Testing
 
 ```bash
