@@ -3,6 +3,8 @@
  * Implements 3-Tier Circles, Groundedness Index (G), and Asymmetric Hidden Reputation Dynamics.
  */
 
+import { reputationStakeGuard } from '../courtroom/reputationStakeGuard.js';
+
 export const CIRCLE_TIERS = {
   TIER_1_CLOSE_FRIENDS: 1,
   TIER_2_ACQUAINTANCES: 2,
@@ -141,6 +143,57 @@ export class FeedManager {
       groundednessIndex: gIndex,
       authorReputationTier: rep >= 75 ? 'HIGH' : rep >= 40 ? 'STANDARD' : 'THROTTLED',
       reason: isVisible ? 'Eligible for feed distribution' : 'Throttled due to low groundedness or reputation penalty'
+    };
+  }
+
+  /**
+   * Creates and registers a new post in the feed, passing through the reputation stake guard.
+   * @param {Object} params
+   * @param {string} params.authorDid
+   * @param {string} params.text
+   * @param {Object} [params.metrics={}]
+   * @param {number} [params.stakeDeposit=0]
+   * @returns {Object} Result with post details or rejection error
+   */
+  createPost(params = {}) {
+    const { authorDid, text, metrics = {}, stakeDeposit = 0 } = params;
+    if (!authorDid || !text) {
+      throw new Error('authorDid and text are required to create a post');
+    }
+
+    const currentRep = this.getHiddenReputation(authorDid);
+    const guardResult = reputationStakeGuard.evaluateStakeToPost({
+      authorDid,
+      rep: currentRep,
+      stakeDeposit
+    });
+
+    if (!guardResult.allowed) {
+      return {
+        success: false,
+        post: null,
+        error: guardResult.reason,
+        guard: guardResult
+      };
+    }
+
+    const postId = `post_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const post = {
+      postId,
+      authorDid,
+      text,
+      metrics,
+      createdAt: Date.now(),
+      stakeStatus: guardResult.status,
+      stakeHeld: guardResult.stakeHeld || 0,
+      authorReputation: currentRep
+    };
+
+    this.posts.set(postId, post);
+    return {
+      success: true,
+      post,
+      guard: guardResult
     };
   }
 }

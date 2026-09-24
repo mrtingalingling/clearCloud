@@ -57,6 +57,9 @@ Detailed specification available in [**`docs/architecture.md`**](./docs/architec
    - Substantive Evidence Submission Form in `CourtroomView.svelte` with live CID validation (`ipfs://`, `ar://`, `doi.org/`), AI relevance filtering ($\ge 0.70$), and escalating anti-griefing deposits ($50 \times 2^{n-1}$).
 3. **In-Feed Social Overlays (`src/social/`)**:
    - Live badge and card generator for Bluesky, X/Twitter, Reddit, and YouTube.
+4. **Governance Policy & Economic Gating (`src/config/`, `src/courtroom/`)**:
+   - Low-Reputation Stake-to-Post Guard (`STAKE_TO_POST_ENABLED: false`, feature-flagged).
+   - Multi-Origin Case Initiation (`SOCIAL_MEDIA` vs `EXTENSION_APP`) with optional or mandatory validation wagers (`CASE_WAGER_REQUIRED: false`, feature-flagged).
 
 ---
 
@@ -64,7 +67,7 @@ Detailed specification available in [**`docs/architecture.md`**](./docs/architec
 
 ```bash
 npm install
-npm test # Runs 43/43 passing Vitest tests across 8 suites
+npm test # Runs 56/56 passing Vitest tests across 9 suites
 npm run dev # Starts local Svelte 5 dev server on port 5173
 ```
 

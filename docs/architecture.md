@@ -71,6 +71,16 @@ graph TD
 ### 2.3 Social Overlays (`src/social/`)
 - **Overlay Cards (`overlayService.js`)**: Renders epistemic badges and cards across Bluesky, X, Reddit, and YouTube with direct links to Courtroom case dockets.
 
+### 2.4 Governance Policy & Economic Gating (`src/config/`, `src/courtroom/`)
+- **Low-Reputation Stake-to-Post Guard (`reputationStakeGuard.js`)**:
+  - `STAKE_TO_POST_ENABLED: false` (feature-flagged, disabled by default).
+  - When enabled: Citizens with hidden reputation below the `LOW_REP_THRESHOLD` (default 40.0) must deposit a stake bond (`REQUIRED_POST_STAKE_USDC`: 10.0 USDC) to publish content.
+- **Multi-Origin Case Initiation & Wager Trigger (`caseManager.js`)**:
+  - `CASE_WAGER_REQUIRED: false` (feature-flagged, disabled by default).
+  - Supports docket initiation from both `SOCIAL_MEDIA` (clearCloud feed) and `EXTENSION_APP` (Vera browser extension).
+  - When enabled: Initiating a case requires an initial validation wager (`MIN_CASE_WAGER_USDC`: 25.0 USDC) which formats an automated validation market creation dispatch payload for `veracities.social`.
+
+
 ---
 
 ## 3. Cross-Repository Architectural Invariants

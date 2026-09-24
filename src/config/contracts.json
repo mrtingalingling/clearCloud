@@ -1,15 +1,15 @@
 {
   "network": "base-sepolia",
   "chainId": 84532,
-  "deployedAt": "2026-09-23T23:00:01.707Z",
-  "deployer": "0x5b5EeA6f38460b3B43bB7B3d1385Aec4Ce94B284",
+  "deployedAt": "2026-09-24T00:59:36.764Z",
+  "deployer": "0xe4C04A299CC86291AAc4405aCcC0d9a837239037",
   "protocolTreasury": "0x1111111111111111111111111111111111111111",
   "oracleSigner": "0x2222222222222222222222222222222222222222",
   "proxyPattern": "UUPS / ERC-1967",
   "contracts": {
     "ValidationMarket": {
-      "address": "0xb42d5333c766f5f9D2daa38F0C8F9369c69f7dD3",
-      "implementation": "0x08be2772a47e0C63eECca1994f8a7D399D7f3B58",
+      "address": "0x11Cf8Be7584fE08219cf6aB46B5B182544CB820b",
+      "implementation": "0x8601a66856C434a1110475A00A27759E04ED99BE",
       "isUpgradeable": true,
       "proxyType": "ERC1967",
       "abi": [
@@ -829,8 +829,8 @@
       ]
     },
     "CourtroomEscrow": {
-      "address": "0xa2d6a6dd5042455905f2B715E66b380EF2604Df5",
-      "implementation": "0x9940B3984179dA70B54F4aF9b9448702Ae6bE7fe",
+      "address": "0x62b7aED0832C0C526062D24a6C4D53f3E5141Ad0",
+      "implementation": "0xa7fCafD00Dc3AeDf5307754CeD7DAfb24f747440",
       "isUpgradeable": true,
       "proxyType": "ERC1967",
       "abi": [
@@ -1408,8 +1408,8 @@
       ]
     },
     "EpistemicGovernor": {
-      "address": "0x81Fee1017d60661e1c3F07f5a31D733281324831",
-      "implementation": "0x6EC2234c07e95e746f98088ACa2a7E2024cdC328",
+      "address": "0x9990Bb078FcF16C69bfDdB20B2EBD5F9C3fa247E",
+      "implementation": "0xEc6D44583c9F8a326660F00e4a762C8B2B24F783",
       "isUpgradeable": true,
       "proxyType": "ERC1967",
       "parentFramework": "STANDALONE",
