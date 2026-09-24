@@ -57,9 +57,12 @@ Detailed specification available in [**`docs/architecture.md`**](./docs/architec
    - Substantive Evidence Submission Form in `CourtroomView.svelte` with live CID validation (`ipfs://`, `ar://`, `doi.org/`), AI relevance filtering ($\ge 0.70$), and escalating anti-griefing deposits ($50 \times 2^{n-1}$).
 3. **In-Feed Social Overlays (`src/social/`)**:
    - Live badge and card generator for Bluesky, X/Twitter, Reddit, and YouTube.
-4. **Governance Policy & Economic Gating (`src/config/`, `src/courtroom/`)**:
-   - Low-Reputation Stake-to-Post Guard (`STAKE_TO_POST_ENABLED: false`, feature-flagged).
-   - Multi-Origin Case Initiation (`SOCIAL_MEDIA` vs `EXTENSION_APP`) with optional or mandatory validation wagers (`CASE_WAGER_REQUIRED: false`, feature-flagged).
+4. **Epistemic Credit Score & Economic Governance (`src/config/`, `src/courtroom/`, `src/feed/`)**:
+   - Epistemic Credit Score Interaction Weighting: Dynamically discounts likes and juror votes from low-reputation or astroturfing accounts (`CREDIT_SCORE_WEIGHTING_ENABLED: false`, feature-flagged).
+   - Stake-to-Repost Guard: Requires low-rep users to escrow a stake before amplifying claims (`STAKE_TO_REPOST_ENABLED: false`, feature-flagged).
+   - Influencer Reach Staking: High-reach accounts ($\ge 10,000$ followers) with sub-threshold reputation must deposit audience-scaled broadcast bonds.
+   - Exponential Disinformation Penalties: Unbounded cost curves ($2^{\Delta/5} \times 2^{\text{strikes}}$) with no ceiling, making sustained disinformation financially ruinous.
+   - Multi-Origin Case Initiation & Wager Surcharges: Docket initiation from `SOCIAL_MEDIA` and `EXTENSION_APP` with risk-adjusted wagering.
 
 ---
 
@@ -67,7 +70,7 @@ Detailed specification available in [**`docs/architecture.md`**](./docs/architec
 
 ```bash
 npm install
-npm test # Runs 56/56 passing Vitest tests across 9 suites
+npm test # Runs 68/68 passing Vitest tests across 9 suites
 npm run dev # Starts local Svelte 5 dev server on port 5173
 ```
 

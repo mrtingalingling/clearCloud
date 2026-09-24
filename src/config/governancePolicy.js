@@ -5,20 +5,31 @@
  */
 
 export const DEFAULT_GOVERNANCE_POLICY = Object.freeze({
-  // Feature flag 1: Low-reputation stake-to-post requirement (disabled for now)
+  // Feature flags (all default to false for frictionless onboarding)
   STAKE_TO_POST_ENABLED: false,
-
-  // Citizen reputation threshold below which stake is required (baseline: 50.0, throttled < 40.0)
-  LOW_REP_THRESHOLD: 40.0,
-
-  // Required escrow stake bond in USDC for low-reputation users to publish
-  REQUIRED_POST_STAKE_USDC: 10.0,
-
-  // Feature flag 2: Mandatory wager to initiate a courtroom case (disabled for now)
+  STAKE_TO_REPOST_ENABLED: false,
+  CREDIT_SCORE_WEIGHTING_ENABLED: false,
+  INFLUENCER_STAKE_ENABLED: false,
+  EXPONENTIAL_DISINFO_PENALTY_ENABLED: false,
   CASE_WAGER_REQUIRED: false,
 
-  // Minimum wager amount in USDC required to docket a case when wager is mandatory
+  // Baseline credit score parameters
+  BASELINE_REPUTATION: 50.0,
+  LOW_REP_THRESHOLD: 40.0,
+
+  // Influencer threshold parameters
+  INFLUENCER_FOLLOWER_THRESHOLD: 10000,
+  INFLUENCER_MIN_REP_THRESHOLD: 60.0,
+
+  // Base economic stakes (USDC)
+  REQUIRED_POST_STAKE_USDC: 10.0,
+  REQUIRED_REPOST_STAKE_USDC: 5.0,
+  INFLUENCER_BASE_STAKE_USDC: 20.0,
   MIN_CASE_WAGER_USDC: 25.0,
+
+  // Exponential penalty scaling parameters (no cost floor/ceiling)
+  EXPONENTIAL_PENALTY_BASE: 2.0,
+  EXPONENTIAL_STEP_POINTS: 5.0,
 
   // Allowed initiation origins for courtroom cases
   ALLOWED_CASE_SOURCES: Object.freeze(['SOCIAL_MEDIA', 'EXTENSION_APP', 'DIRECT_API'])

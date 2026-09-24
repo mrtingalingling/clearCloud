@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { caseManager } from '../src/courtroom/caseManager.js';
 import { feedManager } from '../src/feed/feedManager.js';
+import { juryEngine } from '../src/courtroom/juryEngine.js';
 import {
   getGovernancePolicy,
   setGovernancePolicy,
@@ -241,6 +242,330 @@ describe('Governance Policy: Low-Reputation Stake-to-Post & Case Initiation Wage
       expect(result.guard.stakeHeld).toBe(10.0);
       expect(result.post.stakeHeld).toBe(10.0);
       expect(result.post.stakeStatus).toBe('PUBLISHED_STAKED_PROVISIONAL');
+    });
+  });
+
+  describe('6. Epistemic Credit Score: Interaction Weighting (Likes & Reactions)', () => {
+    it('returns 1.0x weight for all users when credit score weighting is disabled', () => {
+      const weightResult = reputationStakeGuard.calculateInteractionWeight({
+        userDid: 'did:plc:low_rep_user',
+        rep: 15.0,
+        interactionType: 'LIKE'
+      });
+      expect(weightResult.weight).toBe(1.0);
+      expect(weightResult.discounted).toBe(false);
+    });
+
+    it('dynamically weights likes based on epistemic credit score when enabled', () => {
+      setGovernancePolicy({ CREDIT_SCORE_WEIGHTING_ENABLED: true, BASELINE_REPUTATION: 50.0 });
+
+      // 1. Baseline citizen (rep = 50.0) -> weight 1.0x
+      const baseline = reputationStakeGuard.calculateInteractionWeight({
+        userDid: 'did:plc:baseline',
+        rep: 50.0,
+        interactionType: 'LIKE'
+      });
+      expect(baseline.weight).toBe(1.0);
+      expect(baseline.discounted).toBe(false);
+
+      // 2. High-reputation citizen (rep = 75.0) -> boosted weight 1.5x
+      const highRep = reputationStakeGuard.calculateInteractionWeight({
+        userDid: 'did:plc:scholar',
+        rep: 75.0,
+        interactionType: 'LIKE'
+      });
+      expect(highRep.weight).toBe(1.5);
+      expect(highRep.discounted).toBe(false);
+
+      // 3. Low-reputation actor (rep = 25.0) -> quadratically discounted (25/50)^2 = 0.25x
+      const lowRep = reputationStakeGuard.calculateInteractionWeight({
+        userDid: 'did:plc:troll',
+        rep: 25.0,
+        interactionType: 'LIKE'
+      });
+      expect(lowRep.weight).toBe(0.25);
+      expect(lowRep.discounted).toBe(true);
+
+      // 4. Astroturfing bot (rep = 5.0) -> severe discount (5/50)^2 = 0.01x
+      const bot = reputationStakeGuard.calculateInteractionWeight({
+        userDid: 'did:plc:bot',
+        rep: 5.0,
+        interactionType: 'LIKE'
+      });
+      expect(bot.weight).toBe(0.01);
+      expect(bot.discounted).toBe(true);
+    });
+
+    it('correctly aggregates weighted likes on feed posts', () => {
+      setGovernancePolicy({ CREDIT_SCORE_WEIGHTING_ENABLED: true, BASELINE_REPUTATION: 50.0 });
+
+      const postResult = feedManager.createPost({
+        authorDid: 'did:plc:author_1',
+        text: 'A claim to be liked'
+      });
+      const postId = postResult.post.postId;
+
+      // Author 1 (rep = 50.0, weight = 1.0)
+      feedManager.likePost({ postId, userDid: 'did:plc:user_norm' });
+
+      // Author 2 (rep = 25.0, weight = 0.25)
+      feedManager.adjustHiddenReputation('did:plc:user_low', 'COURTROOM_SLASHED'); // rep = 25.0
+      feedManager.likePost({ postId, userDid: 'did:plc:user_low' });
+
+      // Check stored weighted count
+      const post = feedManager.posts.get(postId);
+      expect(post.likes.length).toBe(2);
+      expect(post.weightedLikeCount).toBe(1.25);
+    });
+  });
+
+  describe('7. Epistemic Credit Score: Juror Vote Weighting', () => {
+    it('scales juror voting weights by credit score', () => {
+      setGovernancePolicy({ CREDIT_SCORE_WEIGHTING_ENABLED: true, BASELINE_REPUTATION: 50.0 });
+
+      const voteCase = caseManager.openCase({
+        title: 'Juror Weight Test',
+        claimText: 'Solar energy capacity grew in 2023',
+        creatorDid: 'did:plc:case_creator'
+      });
+
+      // Juror 1 (High rep = 80.0 -> weight = 1.6)
+      const vote1 = juryEngine.castVote({
+        caseId: voteCase.caseId,
+        jurorDid: 'did:plc:juror_high',
+        vote: 'AFFIRM',
+        argument: 'Verified by IRENA data',
+        rep: 80.0
+      });
+      expect(vote1.weight).toBe(1.6);
+
+      // Juror 2 (Low rep = 25.0 -> weight = 0.5)
+      const vote2 = juryEngine.castVote({
+        caseId: voteCase.caseId,
+        jurorDid: 'did:plc:juror_low',
+        vote: 'DENY',
+        argument: 'Disagreed without source',
+        rep: 25.0
+      });
+      expect(vote2.weight).toBe(0.5);
+
+      const tally = juryEngine.tallyJury(voteCase.caseId);
+      expect(tally.totalWeight).toBe(2.1);
+      expect(tally.affirmWeight).toBe(1.6);
+      expect(tally.denyWeight).toBe(0.5);
+    });
+  });
+
+  describe('8. Stake-to-Repost Guard', () => {
+    beforeEach(() => {
+      setGovernancePolicy({
+        STAKE_TO_REPOST_ENABLED: true,
+        LOW_REP_THRESHOLD: 40.0,
+        REQUIRED_REPOST_STAKE_USDC: 5.0
+      });
+    });
+
+    it('allows verified citizens to repost without a stake', () => {
+      const origPost = feedManager.createPost({
+        authorDid: 'did:plc:orig_author',
+        text: 'Original verifiable post'
+      });
+
+      const reposterDid = 'did:plc:good_citizen';
+      const result = feedManager.repost({
+        originalPostId: origPost.post.postId,
+        reposterDid
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.guard.status).toBe('REPOSTED_REPUTATION_VERIFIED');
+      expect(result.repost.stakeHeld).toBe(0);
+    });
+
+    it('rejects low-reputation users attempting to repost without stake', () => {
+      const origPost = feedManager.createPost({
+        authorDid: 'did:plc:orig_author_2',
+        text: 'Breaking news claim'
+      });
+
+      const lowRepDid = 'did:plc:untrusted_reposter';
+      feedManager.adjustHiddenReputation(lowRepDid, 'COURTROOM_SLASHED'); // 25.0
+
+      const result = feedManager.repost({
+        originalPostId: origPost.post.postId,
+        reposterDid: lowRepDid,
+        stakeDeposit: 0
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.guard.requiresStake).toBe(true);
+      expect(result.guard.deficit).toBe(5.0);
+      expect(result.error).toContain('requires an escrow stake of 5 USDC');
+    });
+
+    it('accepts low-reputation repost when adequate stake bond is deposited', () => {
+      const origPost = feedManager.createPost({
+        authorDid: 'did:plc:orig_author_3',
+        text: 'Controversial report'
+      });
+
+      const lowRepDid = 'did:plc:staked_reposter';
+      feedManager.adjustHiddenReputation(lowRepDid, 'COURTROOM_SLASHED');
+
+      const result = feedManager.repost({
+        originalPostId: origPost.post.postId,
+        reposterDid: lowRepDid,
+        stakeDeposit: 5.0
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.guard.status).toBe('REPOSTED_STAKED_PROVISIONAL');
+      expect(result.repost.stakeHeld).toBe(5.0);
+    });
+  });
+
+  describe('9. Influencer Staking Requirements Scaled to Reach', () => {
+    beforeEach(() => {
+      setGovernancePolicy({
+        INFLUENCER_STAKE_ENABLED: true,
+        INFLUENCER_FOLLOWER_THRESHOLD: 10000,
+        INFLUENCER_MIN_REP_THRESHOLD: 60.0,
+        INFLUENCER_BASE_STAKE_USDC: 20.0,
+        EXPONENTIAL_DISINFO_PENALTY_ENABLED: true
+      });
+    });
+
+    it('exempts high-reputation influencers above the influencer reputation threshold', () => {
+      const influencerDid = 'did:plc:trusted_influencer';
+      feedManager.setFollowerCount(influencerDid, 50000);
+      feedManager.adjustHiddenReputation(influencerDid, 'VERIFIED_POST');
+      feedManager.adjustHiddenReputation(influencerDid, 'VERIFIED_POST');
+      feedManager.adjustHiddenReputation(influencerDid, 'VERIFIED_POST');
+      feedManager.adjustHiddenReputation(influencerDid, 'VERIFIED_POST');
+      feedManager.adjustHiddenReputation(influencerDid, 'VERIFIED_POST');
+      feedManager.adjustHiddenReputation(influencerDid, 'VERIFIED_POST');
+      feedManager.adjustHiddenReputation(influencerDid, 'VERIFIED_POST'); // rep >= 60.0
+
+      const result = feedManager.createPost({
+        authorDid: influencerDid,
+        text: 'High-reach verified announcement'
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.guard.requiresStake).toBe(false);
+    });
+
+    it('requires influencers with borderline reputation to post an audience-scaled stake bond', () => {
+      const influencerDid = 'did:plc:sensational_influencer';
+      feedManager.setFollowerCount(influencerDid, 50000); // 5x threshold: log10(5) ~ 0.699, reachMultiplier ~ 1.699
+      // Baseline reputation = 50.0 (< 60.0 threshold)
+
+      const result = feedManager.createPost({
+        authorDid: influencerDid,
+        text: 'Unconfirmed rumor broadcast to 50k followers',
+        stakeDeposit: 0
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.guard.requiresStake).toBe(true);
+      // Base 20.0 * 2^((60-50)/5) * (1 + log10(5)) = 20 * 4 * 1.69897 = 135.92 USDC
+      expect(result.guard.requiredStake).toBeGreaterThan(100.0);
+      expect(result.error).toContain('Influencer reach (50000 followers)');
+    });
+  });
+
+  describe('10. Exponential Disinformation Penalties (Unbounded Cost Curve)', () => {
+    beforeEach(() => {
+      setGovernancePolicy({
+        STAKE_TO_POST_ENABLED: true,
+        EXPONENTIAL_DISINFO_PENALTY_ENABLED: true,
+        LOW_REP_THRESHOLD: 40.0,
+        REQUIRED_POST_STAKE_USDC: 10.0,
+        EXPONENTIAL_PENALTY_BASE: 2.0,
+        EXPONENTIAL_STEP_POINTS: 5.0
+      });
+    });
+
+    it('doubles required stake for every 5 reputation points below threshold', () => {
+      // Rep = 40.0 -> deficit 0 -> multiplier 2^0 = 1.0x -> stake = 10.0 USDC
+      const stakeAt40 = reputationStakeGuard.calculateExponentialStake({
+        rep: 40.0,
+        baseStake: 10.0,
+        threshold: 40.0
+      });
+      expect(stakeAt40).toBe(10.0);
+
+      // Rep = 35.0 -> deficit 5 -> multiplier 2^1 = 2.0x -> stake = 20.0 USDC
+      const stakeAt35 = reputationStakeGuard.calculateExponentialStake({
+        rep: 35.0,
+        baseStake: 10.0,
+        threshold: 40.0
+      });
+      expect(stakeAt35).toBe(20.0);
+
+      // Rep = 30.0 -> deficit 10 -> multiplier 2^2 = 4.0x -> stake = 40.0 USDC
+      const stakeAt30 = reputationStakeGuard.calculateExponentialStake({
+        rep: 30.0,
+        baseStake: 10.0,
+        threshold: 40.0
+      });
+      expect(stakeAt30).toBe(40.0);
+
+      // Rep = 20.0 -> deficit 20 -> multiplier 2^4 = 16.0x -> stake = 160.0 USDC
+      const stakeAt20 = reputationStakeGuard.calculateExponentialStake({
+        rep: 20.0,
+        baseStake: 10.0,
+        threshold: 40.0
+      });
+      expect(stakeAt20).toBe(160.0);
+    });
+
+    it('escalates exponentially with disinformation strikes with no ceiling', () => {
+      // Rep = 20.0 + 2 disinformation strikes: 10 * 16 * 2^2 = 640.0 USDC
+      const stakeWith2Strikes = reputationStakeGuard.calculateExponentialStake({
+        rep: 20.0,
+        baseStake: 10.0,
+        threshold: 40.0,
+        disinfoStrikes: 2
+      });
+      expect(stakeWith2Strikes).toBe(640.0);
+
+      // Rep = 20.0 + 5 disinformation strikes: 10 * 16 * 2^5 = 5,120.0 USDC
+      const stakeWith5Strikes = reputationStakeGuard.calculateExponentialStake({
+        rep: 20.0,
+        baseStake: 10.0,
+        threshold: 40.0,
+        disinfoStrikes: 5
+      });
+      expect(stakeWith5Strikes).toBe(5120.0);
+
+      // Confirms sustained disinformation campaigns face exponentially prohibitive costs
+      expect(stakeWith5Strikes).toBeGreaterThan(5000);
+    });
+  });
+
+  describe('11. Low-Reputation / Disinformation Wager Surcharges', () => {
+    it('applies cost multiplier for low-rep / penalized bettors in validation markets', () => {
+      // Standard citizen
+      const cleanWager = reputationStakeGuard.evaluateWagerSurcharge({
+        bettorDid: 'did:plc:clean_bettor',
+        rep: 50.0,
+        baseWager: 25.0
+      });
+      expect(cleanWager.requiresSurcharge).toBe(false);
+      expect(cleanWager.requiredWager).toBe(25.0);
+
+      // Slashed citizen (rep = 20.0, 2 strikes)
+      const penalizedWager = reputationStakeGuard.evaluateWagerSurcharge({
+        bettorDid: 'did:plc:bad_bettor',
+        rep: 20.0,
+        baseWager: 25.0,
+        disinfoStrikes: 2
+      });
+      expect(penalizedWager.requiresSurcharge).toBe(true);
+      // Deficit = 20 -> 1 + (20/20) = 2.0x; strikes = 2 -> 1.5^2 = 2.25x; total ~ 4.5x
+      expect(penalizedWager.multiplier).toBe(4.5);
+      expect(penalizedWager.requiredWager).toBe(112.5);
     });
   });
 });

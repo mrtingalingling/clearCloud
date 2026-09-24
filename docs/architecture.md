@@ -71,14 +71,26 @@ graph TD
 ### 2.3 Social Overlays (`src/social/`)
 - **Overlay Cards (`overlayService.js`)**: Renders epistemic badges and cards across Bluesky, X, Reddit, and YouTube with direct links to Courtroom case dockets.
 
-### 2.4 Governance Policy & Economic Gating (`src/config/`, `src/courtroom/`)
-- **Low-Reputation Stake-to-Post Guard (`reputationStakeGuard.js`)**:
-  - `STAKE_TO_POST_ENABLED: false` (feature-flagged, disabled by default).
-  - When enabled: Citizens with hidden reputation below the `LOW_REP_THRESHOLD` (default 40.0) must deposit a stake bond (`REQUIRED_POST_STAKE_USDC`: 10.0 USDC) to publish content.
-- **Multi-Origin Case Initiation & Wager Trigger (`caseManager.js`)**:
+### 2.4 Epistemic Credit Score & Economic Governance (`src/config/`, `src/courtroom/`, `src/feed/`)
+- **Epistemic Credit Score Interaction Weighting (`reputationStakeGuard.calculateInteractionWeight`)**:
+  - `CREDIT_SCORE_WEIGHTING_ENABLED: false` (feature-flagged, disabled by default).
+  - When enabled: Citizen reputation acts like a credit score affecting all platform interactions.
+  - Likes/reactions from low-reputation or suspected astroturfing accounts are quadratically down-weighted ($\max(0.01, (\text{rep} / 50.0)^2)$), while high-reputation accounts earn up to $2.0\times$ weight boost.
+  - Juror voting weights scale with credit score ($\max(0.05, \text{rep} / 50.0)$).
+- **Stake-to-Repost Guard (`reputationStakeGuard.evaluateStakeToRepost`)**:
+  - `STAKE_TO_REPOST_ENABLED: false` (feature-flagged, disabled by default).
+  - When enabled: Amplifying/reposting content requires low-reputation users ($\text{rep} < 40.0$) to deposit an escrow stake (`REQUIRED_REPOST_STAKE_USDC`: 5.0 USDC).
+- **Influencer Reach Staking (`reputationStakeGuard.evaluateStakeToPost`)**:
+  - `INFLUENCER_STAKE_ENABLED: false` (feature-flagged, disabled by default).
+  - Accounts with $\ge 10,000$ followers carry elevated systemic risk. If their reputation falls below $60.0$, they must deposit an audience-scaled stake bond ($20 \text{ USDC} \times (1 + \log_{10}(\text{followers}/10000))$).
+- **Exponential Disinformation Penalties (Unbounded Cost Curve)**:
+  - `EXPONENTIAL_DISINFO_PENALTY_ENABLED: false` (feature-flagged, disabled by default).
+  - Stakes escalate exponentially with reputation deficits ($2^{(\text{threshold} - \text{rep}) / 5}$) and disinformation strikes ($2^{\text{strikes}}$).
+  - There is **no cost ceiling**, making repeated disinformation campaigns financially impossible to sustain.
+- **Low-Reputation Wager Surcharges & Case Initiation (`caseManager.js`, `reputationStakeGuard.js`)**:
   - `CASE_WAGER_REQUIRED: false` (feature-flagged, disabled by default).
-  - Supports docket initiation from both `SOCIAL_MEDIA` (clearCloud feed) and `EXTENSION_APP` (Vera browser extension).
-  - When enabled: Initiating a case requires an initial validation wager (`MIN_CASE_WAGER_USDC`: 25.0 USDC) which formats an automated validation market creation dispatch payload for `veracities.social`.
+  - Supports docket initiation from both `SOCIAL_MEDIA` and `EXTENSION_APP`.
+  - Low-reputation or penalized bettors incur cost surcharges in validation markets.
 
 
 ---

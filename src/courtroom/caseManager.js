@@ -63,7 +63,9 @@ export class CaseManager {
       initialDeposit = 0,
       evidence = [],
       source = 'SOCIAL_MEDIA',
-      wager = null
+      wager = null,
+      rep = 50.0,
+      disinfoStrikes = 0
     } = params;
 
     if (!title || !claimText || !creatorDid) {
@@ -79,7 +81,9 @@ export class CaseManager {
     const wagerCheck = reputationStakeGuard.evaluateCaseInitiation({
       creatorDid,
       source,
-      wager
+      wager,
+      rep,
+      disinfoStrikes
     });
 
     if (!wagerCheck.allowed) {
