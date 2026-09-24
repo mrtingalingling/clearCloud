@@ -19,11 +19,13 @@ graph TD
         P_Market["Validation Market Staking & Payout Pools"]
         P_DAO["Epistemic DAO Governance ('EnDAOsment')"]
         P_Settle["Courtroom Settlement Protocol (14-day cold & challenge bonds)"]
+        P_Proxy["UUPS / ERC-1967 Proxies & Modular DAO Adapters"]
     end
 
     subgraph LayerApp ["Unified Social Application (mrtingalingling/clearCloud)"]
         A_Feed["The Feed & Relational Circles (Feature 1.1)"]
         A_Grounded["Groundedness Index (G) & Hidden Rep"]
+        A_Guard["Reputation Stake Guard & Credit Score (Feature 1.4)"]
         A_Court["The Courtroom Deliberation Forum (Feature 1.3)"]
         A_DAG["Compound Claim DAG Decomposition"]
         A_Jury["Juror Voting & AI Judge Synthesis"]
@@ -31,7 +33,11 @@ graph TD
     end
 
     Layer0 -->|"Exports @vera/core API (local AI, PII scrubber)"| LayerApp
+    Layer0 -.->|"Initiates Case Docket via Extension"| A_Court
+    LayerApp -->|"Dispatches validation wagers & case dockets"| P_Market
+    LayerApp -->|"Dispatches M-of-N signed juror attestations"| LayerProtocol
     LayerProtocol -->|"Provides ATProto Auth & Staking Settlement Protocol"| LayerApp
+    P_Proxy -.->|"Wraps & upgrades contracts"| P_Market
 ```
 
 ---
