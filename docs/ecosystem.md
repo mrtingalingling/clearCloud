@@ -1,6 +1,6 @@
 # Vera Ecosystem: Overview
 
-Three products share one open protocol: Vera verifies claims as a standalone AI agent, ClearCloud builds a social network on Vera, and Veracities.bet runs a market on ClearCloud's challenge outcomes. This tab lives in the ClearCloud repo and holds only what spans all three.
+Three products share one open protocol: Vera verifies claims as a standalone AI agent, ClearCloud builds a social network on Vera, and Veracities.bet runs a market on ClearCloud's challenge outcomes. This document lives in the ClearCloud repo and holds only what spans all three.
 
 ## Products and domains
 
