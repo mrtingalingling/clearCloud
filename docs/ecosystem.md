@@ -9,24 +9,24 @@ This set replaces the single "Truth Settlement" PRD, its Layer 0–3 numbering, 
 | Product | What it is | Calls | Domain | Repo | Status |
 | --- | --- | --- | --- | --- | --- |
 | Vera | Standalone AI agent for claim verification, sold as a plug-in: API, SDK, embeddable components, browser extension | Nothing in the ecosystem | veracities.app | vera | Prototyped |
-| ClearCloud | Social network with relational feeds and the Courtroom, where rulings settle challenges | Vera SDK and API; shared protocol | clearcloud.social (Confirmed); DAO portal on a subdomain | ClearCloud's repo (holds this design document) | Prototyped |
+| ClearCloud | Social network with relational feeds and the Courtroom, where rulings settle challenges | Vera SDK and API; shared protocol | clearcloud.social (Confirmed); DAO portal on a subdomain | ClearCloud's repo (holds this document) | Prototyped |
 | Veracities.bet | Licensed Validation Market on challenge outcomes | Vera API; ClearCloud's public challenge and ruling records | veracities.bet and veracities.social | veracities.social | Proposed |
-| Shared protocol | ATProto record schemas: Vera's under `app.veracities.*`, ClearCloud's under `social.clearcloud.*` | Nothing | — | Defined in the Vera design document | Proposed |
+| Shared protocol | ATProto record schemas: Vera's under `app.veracities.*`, ClearCloud's under `social.clearcloud.*` | Nothing | — | Defined in Vera's design document | Proposed |
 
 All domain choices are intentional, including the shared "veracities" name across Vera and Veracities.bet. "The betting product" and "the Validation Market" both mean Veracities.bet.
 
-Read the design documents in this order: this one for what spans all three, then Vera (complete on its own), then ClearCloud and Veracities.bet, each of which builds on the ones before it.
+Read the documents in this order: this one for what spans all three, then Vera (complete on its own), then ClearCloud and Veracities.bet, each of which builds on the ones before it.
 
 ## Status vocabulary
 
-Every feature and decision in every design document carries exactly one of these, in this order, and nothing else. ADRs use the first two.
+Every feature and decision in every document carries exactly one of these, in this order, and nothing else. ADRs use the first two.
 
 - **Proposed:** written down in this set; not yet accepted by the owner; no code.
 - **Confirmed:** accepted by the owner and specified; no code yet.
 - **Prototyped:** code exists and runs in a demo; may contain stubs; not for users.
 - **Audited:** no stubs, covered by tests and the eval harness, passed its gate's security review, and has a named owner. Only Audited features reach outside users.
 
-Two documentation rules follow from the review of the current repo: a doc may only claim a status the code supports, and test counts never appear in product briefs. ADR numbers are global across design documents.
+Two documentation rules follow from the review of the current repo: a doc may only claim a status the code supports, and test counts never appear in product briefs. ADR numbers are global across documents.
 
 ## Money flows
 
@@ -40,12 +40,13 @@ Vera's income never depends on a verdict, a ruling, or betting volume; every rul
 | Forfeited bonds | ClearCloud probation bonds lost on a ruling | ClearCloud development; after 12 months, any leftover pays evidence-quality rewards | Vera, the shared protocol, the parties, the panel, influencer rewards |
 | Influencer quality rewards | A fixed budget from ClearCloud's non-betting earnings, set in advance | High-reputation accounts, for post quality only | Never sized by forfeits |
 | DAO treasury | ClearCloud's non-betting earnings, held by the DAO; forfeits are earmarked for ClearCloud and can never reach Vera's budget | ClearCloud and Vera (Vera only through its fixed budget) | Market positions, markets on claims, any verdict |
+| Courtroom panel pay | ClearCloud's own revenue until Veracities.bet launches; then a percentage of Veracities.bet's earnings, through the segregated pool, with ClearCloud's revenue as the fallback | A flat rate per case, fixed in advance | Never varies with a case's outcome or its market |
 
 Forfeits stay out of the shared protocol because its schemas and the `@vera/protocol` package are Vera's work. Influencer rewards come from a fixed budget so that no recipient, who may also challenge posts or sit on panels, gains when someone else loses a bond.
 
 ## Cross-product decisions
 
-| ADR | Decision | Design document | Status |
+| ADR | Decision | Document | Status |
 | --- | --- | --- | --- |
 | 001 | Three products, one shared protocol, arm's-length integration | Ecosystem | Proposed |
 | 002–009, 012–014 | Vera's design decisions | Vera | Proposed |
@@ -93,7 +94,7 @@ Vera's gates set the pace for the other two products; dates come once Vera's Pha
 
 ## Threats that span products
 
-Each product design document keeps its own threat model; these are the ones that cross a product boundary.
+Each product's design document keeps its own threat model; these are the ones that cross a product boundary.
 
 | Threat | Where | Mitigation | Tickets | Reviewed at |
 | --- | --- | --- | --- | --- |
