@@ -31,7 +31,7 @@ Carried over from the earlier PRD and Proposed here (C-013).
 ClearCloud is a Vera customer: it embeds Vera's public SDK in its app and server and calls Vera's public API, with no private access.
 
 - **Scrubbing:** Vera's scrubber runs inside ClearCloud's app before anything reaches Vera. Drafts and messages get a preview; automatic checks of already-published posts are scrubbed on ClearCloud's server without a prompt.
-- **Passive checks:** posts are checked in the background and shown with Vera's verdict badge and confidence, under the host platform contract in the Vera tab. Ranking labels come from Vera's cheaper classify-only call (claims:classify), so ranking never needs a full check.
+- **Passive checks:** posts are checked in the background and shown with Vera's verdict badge and confidence, under the host platform contract in the Vera design document. Ranking labels come from Vera's cheaper classify-only call (claims:classify), so ranking never needs a full check.
 - **Disagreement:** when a ruling and Vera's verdict disagree, ClearCloud shows both, labeled by source. Anyone can request a hallucination check through Vera's audit endpoint; a ruling never changes a verdict. The audit endpoint ships at Vera's Gate 4, so until then the Courtroom pilot shows the ruling and the verdict side by side, labeled, without hallucination checks.
 - **Exhibits:** when a case opens, ClearCloud freezes Vera's verdict and evidence with a snapshot and attaches it to the case by CID.
 - **Falsifiability gatekeeping:** Vera's `not-checkable` result routes opinions and predictions away from the Courtroom.
@@ -110,7 +110,7 @@ One natural person holds one reputation, however many personas they post under.
 
 **Earlier choices to keep or replace (C-007).** The earlier docs chose Base (with Arbitrum as the alternative) for the contracts and USDC, Gitcoin Passport (score of at least 20) or World ID for proof of personhood, and Semaphore zero-knowledge proofs so members can prove their tier without revealing who they are. Semaphore proves membership anonymously while MACI resists collusion, so the two may work together. The PRD also weighted votes by an Epistemic Quotient (0.40 factuality + 0.30 bridging consensus + 0.20 steel-manning − 0.30 toxicity) rather than ruling-based reputation alone; which one sets voting weight is part of C-007.
 
-**Treasury.** The DAO treasury runs on contracts adapted from the EnDAOsment framework behind UUPS/ERC-1967 proxies, funds ClearCloud and Vera's fixed budget, and holds no funds until the contracts pass an audit (S-006). The blockchain for MACI and the contracts is still open; MACI is built for Ethereum, and the choice is part of C-007. The full rules are in ADR-015 and the Ecosystem tab's money-flow table.
+**Treasury.** The DAO treasury runs on contracts adapted from the EnDAOsment framework behind UUPS/ERC-1967 proxies, funds ClearCloud and Vera's fixed budget, and holds no funds until the contracts pass an audit (S-006). The blockchain for MACI and the contracts is still open; MACI is built for Ethereum, and the choice is part of C-007. The full rules are in ADR-015 and the Ecosystem design document's money-flow table.
 
 **Money flows.** ClearCloud's money is deterministic (ads, creator payments, subscriptions, data-access fees) except the probation bond. Veracities.bet ads run only where gambling advertising is legal, only to age-verified users who opted in, labeled as gambling ads, and never on or beside a post under challenge; their revenue goes to the segregated pool. Each new money flow gets a threat-delta review against ADR-011 before it ships.
 
@@ -145,7 +145,7 @@ Updated from the earlier user journeys.
 
 ## Plan and tickets
 
-ClearCloud's build starts after Vera's Gate 2 freezes the API; the Courtroom pilots without wagers or bonds, and bonds wait for counsel's memo. Tickets follow the assignment rules and Owner placeholder in the Vera tab.
+ClearCloud's build starts after Vera's Gate 2 freezes the API; the Courtroom pilots without wagers or bonds, and bonds wait for counsel's memo. Tickets follow the assignment rules and Owner placeholder in the Vera design document.
 
 | ID | Ticket | Acceptance criteria | Model | Reviewer | Depends on | Status |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -165,7 +165,7 @@ ClearCloud's build starts after Vera's Gate 2 freezes the API; the Courtroom pil
 
 ## Threat model
 
-The assets are ruling integrity, reputation, users' identities behind their personas, bonds, and the treasury. Threats that cross into Vera or Veracities.bet are in the Ecosystem tab.
+The assets are ruling integrity, reputation, users' identities behind their personas, bonds, and the treasury. Threats that cross into Vera or Veracities.bet are in the Ecosystem design document.
 
 | Threat | Where | Mitigation | Tickets | Reviewed at |
 | --- | --- | --- | --- | --- |
