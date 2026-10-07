@@ -9,24 +9,24 @@ This set replaces the single "Truth Settlement" PRD, its Layer 0–3 numbering, 
 | Product | What it is | Calls | Domain | Repo | Status |
 | --- | --- | --- | --- | --- | --- |
 | Vera | Standalone AI agent for claim verification, sold as a plug-in: API, SDK, embeddable components, browser extension | Nothing in the ecosystem | veracities.app | vera | Prototyped |
-| ClearCloud | Social network with relational feeds and the Courtroom, where rulings settle challenges | Vera SDK and API; shared protocol | clearcloud.social (Confirmed); DAO portal on a subdomain | ClearCloud's repo (holds this tab) | Prototyped |
+| ClearCloud | Social network with relational feeds and the Courtroom, where rulings settle challenges | Vera SDK and API; shared protocol | clearcloud.social (Confirmed); DAO portal on a subdomain | ClearCloud's repo (holds this design document) | Prototyped |
 | Veracities.bet | Licensed Validation Market on challenge outcomes | Vera API; ClearCloud's public challenge and ruling records | veracities.bet and veracities.social | veracities.social | Proposed |
-| Shared protocol | ATProto record schemas: Vera's under `app.veracities.*`, ClearCloud's under `social.clearcloud.*` | Nothing | — | Defined in the Vera tab | Proposed |
+| Shared protocol | ATProto record schemas: Vera's under `app.veracities.*`, ClearCloud's under `social.clearcloud.*` | Nothing | — | Defined in the Vera design document | Proposed |
 
 All domain choices are intentional, including the shared "veracities" name across Vera and Veracities.bet. "The betting product" and "the Validation Market" both mean Veracities.bet.
 
-Read the tabs in this order: this one for what spans all three, then Vera (complete on its own), then ClearCloud and Veracities.bet, each of which builds on the ones before it.
+Read the design documents in this order: this one for what spans all three, then Vera (complete on its own), then ClearCloud and Veracities.bet, each of which builds on the ones before it.
 
 ## Status vocabulary
 
-Every feature and decision in every tab carries exactly one of these, in this order, and nothing else. ADRs use the first two.
+Every feature and decision in every design document carries exactly one of these, in this order, and nothing else. ADRs use the first two.
 
 - **Proposed:** written down in this set; not yet accepted by the owner; no code.
 - **Confirmed:** accepted by the owner and specified; no code yet.
 - **Prototyped:** code exists and runs in a demo; may contain stubs; not for users.
 - **Audited:** no stubs, covered by tests and the eval harness, passed its gate's security review, and has a named owner. Only Audited features reach outside users.
 
-Two documentation rules follow from the review of the current repo: a doc may only claim a status the code supports, and test counts never appear in product briefs. ADR numbers are global across tabs.
+Two documentation rules follow from the review of the current repo: a doc may only claim a status the code supports, and test counts never appear in product briefs. ADR numbers are global across design documents.
 
 ## Money flows
 
@@ -45,7 +45,7 @@ Forfeits stay out of the shared protocol because its schemas and the `@vera/prot
 
 ## Cross-product decisions
 
-| ADR | Decision | Tab | Status |
+| ADR | Decision | Design document | Status |
 | --- | --- | --- | --- |
 | 001 | Three products, one shared protocol, arm's-length integration | Ecosystem | Proposed |
 | 002–009, 012–014 | Vera's design decisions | Vera | Proposed |
@@ -93,7 +93,7 @@ Vera's gates set the pace for the other two products; dates come once Vera's Pha
 
 ## Threats that span products
 
-Each product tab keeps its own threat model; these are the ones that cross a product boundary.
+Each product design document keeps its own threat model; these are the ones that cross a product boundary.
 
 | Threat | Where | Mitigation | Tickets | Reviewed at |
 | --- | --- | --- | --- | --- |
